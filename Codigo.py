@@ -79,7 +79,7 @@ def agregar_cliente():
             mi_cursor = conn.cursor()
             valores = (nombre, rfc, correo)
             mi_cursor.execute("INSERT INTO Cliente (nombre, rfc, correo) VALUES (?,?,?)", valores)
-            print(f"La clave asignada fue {mi_cursor.lastrowid}")
+            print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
     except Error as e:
         print (e)
     except Exception:
@@ -87,17 +87,150 @@ def agregar_cliente():
     finally:
         conn.close()
 
-def cliente_por_clave():
-    pass
+def clientes_ordenados_por_claves():
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            mi_cursor.execute("SELECT * FROM Cliente ORDER BY claveCliente")
+            registro = mi_cursor.fetchall()
 
-def cliente_por_nombre():
-    pass
+            if registro:
+                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
+                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo hay clientes registrados")
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+                opcion = input("Ingrese una opción: ")
+                if opcion == "1":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_csv = f"ReporteClientesActivosPorClave_{fecha_actual}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_excel = f"ReporteClientesActivosPorClave_{fecha_actual}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+                elif opcion == "3":
+                    print("\nOK")
+                    break
+                else:
+                    print("\nOpción no válida, ingrese nuevamente.")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
+def clientes_ordenados_por_nombres():
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            mi_cursor.execute("SELECT * FROM Cliente ORDER BY nombre")
+            registro = mi_cursor.fetchall()
+
+            if registro:
+                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
+                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo hay clientes registrados")
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+                opcion = input("Ingrese una opción: ")
+                if opcion == "1":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_csv = f"ReporteClientesActivosPorNombre_{fecha_actual}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_excel = f"ReporteClientesActivosPorNombre_{fecha_actual}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+                elif opcion == "3":
+                    print("\nOK")
+                    break
+                else:
+                    print("\nOpción no válida, ingrese nuevamente.")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def cliente_busqueda_por_clave():
-    pass
+    while True:
+      valor_clave = input("\nClave del cliente a consultar: ")
+
+      if valor_clave == "":
+        print ("\n* Ingrese una clave para la busqueda del cliente. *")
+        continue
+      elif not (bool(re.search('^[0-9]+$', valor_clave))):
+        print ("\n* Clave no valida, ingrese nuevmente *")
+        continue
+      else:
+        break
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            valores = {"claveCliente":valor_clave}
+            mi_cursor.execute("SELECT * FROM Cliente WHERE claveCliente = :claveCliente", valores)
+            registro = mi_cursor.fetchall()
+
+            if registro:
+                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
+                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo se encontró un cliente asociado con la clave {valor_clave}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def cliente_busqueda_por_nombre():
-    pass
+    while True:
+      valor_nombre = input("\nNombre del cliente a consultar: ")
+
+      if valor_nombre == "":
+        print ("\n* Ingrese un nombre para la busqueda del cliente. *")
+        continue
+      elif not (bool(re.search('^[a-zA-Z ]+$', valor_nombre))):
+        print ("\n* Nombre no valido, ingrese nuevmente *")
+        continue
+      else:
+        break
+      
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            valores = {"nombre":valor_nombre}
+            mi_cursor.execute("SELECT * FROM Cliente WHERE nombre = :nombre", valores)
+            registro = mi_cursor.fetchall()
+
+            if registro:
+                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
+                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo se encontró un cliente asociado con el nombre ingresado {valor_nombre}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def agregar_servicio():
     pass
@@ -117,7 +250,7 @@ def servicios_por_nombre():
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
 while True:
-    print("\nMENU PRINCIPAL")
+    print("\n** MENU PRINCIPAL **")
     print("\n1. Menu Notas\n2. Menu Clientes\n3. Menu Servicios\n4. Salir")
     opcion = input("Ingresa una opcion: ")
     if opcion == "1":
@@ -147,13 +280,13 @@ while True:
         else:
             print("Opcion no valida, ingrese nuevamente.")
 
-    if opcion == "2":
+    elif opcion == "2":
         while True:
             print("\n** Menu Clientes **")
             print("\n1. Agregar un cliente\n2. Consultas y reportes\n3. Volver al menu principal")
             opcion_clientes = input("Ingrese una opcion: ")
             if opcion_clientes == "":
-                print("\n* OPCION OMITIDA, INGRESE UNA OPCION *")
+                print("\n* Opcion omitida, Ingrese una opcion *")
                 continue
 
             if opcion_clientes == "1":
@@ -169,25 +302,27 @@ while True:
 
                     if opcion_consultas == "1":
                         while True:
-                            print("\nListado de clientes registrados")
+                            print("\n** Listado de clientes registrados **")
                             print("\n1. Ordenado por clave\n2. Ordenado por nombre\n3. Volver al menu anterior")
                             opcion_cliente_registrados = input("Ingresa una opcion: ")
                             if opcion_cliente_registrados == "1":
                                 if validar_continuidad("¿Estas seguro de realizar un listado de clientes por clave?"):
-                                    cliente_por_clave()
+                                    clientes_ordenados_por_claves()
                             elif opcion_cliente_registrados == "2":
                                 if validar_continuidad("¿Estas seguro de realizar un listado de clientes por nombre?"):
-                                    cliente_por_nombre()
+                                    clientes_ordenados_por_nombres()
                             elif opcion_cliente_registrados == "3":
                                 break
                             else:
-                                print("Opcion no valida, ingrese nuevamente.")
+                                print("\nOpcion no valida, ingrese nuevamente.")
                         continue
 
                     elif opcion_consultas == "2":
-                        cliente_busqueda_por_clave()
+                        if validar_continuidad("¿Estas seguro de realizar una busqueda de cliente por clave?"):
+                            cliente_busqueda_por_clave()
                     elif opcion_consultas == "3":
-                        cliente_busqueda_por_nombre()
+                        if validar_continuidad("¿Estas seguro de realizar una busqueda de cliente por clave?"):
+                            cliente_busqueda_por_nombre()
                     elif opcion_consultas == "4":
                         break
                     else:
@@ -195,9 +330,9 @@ while True:
             elif opcion_clientes == "3":
                 break
             else:
-                    print("\nOpcion no valida, ingrese nuevamente.")
+                print("\nOpcion no valida, ingrese nuevamente.")
             
-    if opcion == "3":
+    elif opcion == "3":
         print("\n** Menu Servicios **")
         print("\n1. Agregar un servicio\n2. Consultas y reportes\n3. Volver al menu principal")
         opcion_servicios = input("Ingresa una opcion: ")
