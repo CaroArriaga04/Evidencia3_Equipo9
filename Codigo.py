@@ -233,19 +233,201 @@ def cliente_busqueda_por_nombre():
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def agregar_servicio():
-    pass
+    while True:
+      print ('______________')
+      print ("SERVICIOS DISPONIBLES")
+      print ("1. afinacion")
+      print ("2. refaccion de balatas")
+      print ("3. cambio de llantas")
+      print ("4. cambio de aceite")
+      print ("5. cambio de suspension")
+      print ("6. nueva pintura")
+
+      nombre = input("\nNombre del servicio: ")
+      if nombre == "":
+        print ("\n* NO SE PUEDE OMITIR ESTE DATO *")
+        continue
+      elif not (bool(re.search('^[a-zA-Z ]+$', nombre))):
+        print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
+        continue
+      else:
+        break
+
+
+    while True:
+        costo = input("\nIngrese el costo del servicio seleccionado: ")
+        if costo == "":
+            print("\n* NO PUEDE ESTAR VACÍO ESTE DATO*")
+            continue
+        elif not (bool(re.match(costo, 'r^[0-9]+\.[0-9]$'))):
+            print("\n*EL PRECIO NO CUMPLE EL FORMATO VALIDO (XX.XX). INTENTAR DE NUEVO *")
+            continue
+        elif costo<=0.00:
+            print ("\n*EL COSTO NO PUEDE SER MENOR A 0 PESOS.*")
+            continue
+        else:
+            break
+
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            valores = (nombre, costo)
+            mi_cursor.execute("INSERT INTO Servicio (nombre, costo) VALUES (?,?,?)", valores)
+            print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        conn.close()
 
 def busqueda_por_clave_servicio():
-    pass
+    while True:
+      v_clave = input("\nClave del servicio a consultar: ")
+
+      if v_clave == "":
+        print ("\n* Ingrese una clave para la busqueda del servicio. *")
+        continue
+      elif not (bool(re.search('^[0-9]+$', v_clave))):
+        print ("\n* Clave no valida, ingrese nuevmente *")
+        continue
+      else:
+        break
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            valores = {"claveServicio":v_clave}
+            mi_cursor.execute("SELECT * FROM Servicio WHERE claveServicio = :claveServicio", valores)
+            registro = mi_cursor.fetchall()
+
+            if registro:
+                datos = [[clave, nombre, costo] for clave, nombre, costo in registro]
+                Columnas = ["Clave", "Nombre", "Costo"]
+                print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo se encontró un cliente asociado con el nombre ingresado {v_clave}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def busqueda_por_nombre_servicio():
-    pass
+    while True:
+      v_nombre = input("\nNombre del servicio a consultar: ")
+
+      if v_nombre == "":
+        print ("\n* Ingrese un nombre para la busqueda del servicio. *")
+        continue
+      elif not (bool(re.search('^[a-zA-Z ]+$', v_nombre))):
+        print ("\n* Nombre no valido, ingrese nuevamente *")
+        continue
+      else:
+        break
+      
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            valores = {"nombre":v_nombre}
+            mi_cursor.execute("SELECT * FROM Servicio WHERE nombre = :nombre", valores)
+            registro = mi_cursor.fetchall()
+
+            if registro:
+                datos = [[clave, nombre, costo] for clave, nombre, costo in registro]
+                Columnas = ["Clave", "Nombre", "Costo"]
+                print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
+            else:
+                print(f"\nNo se encontró un cliente asociado con el nombre ingresado {v_nombre}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def servicios_por_clave():
-    pass
+   try:
+    with sqlite3.connect("TallerMecanico.db") as conn:
+      mi_cursor = conn.cursor()
+      mi_cursor.execute("SELECT * FROM Servicio ORDER BY claveServicio")
+      registro = mi_cursor.fetchall()
 
+      if registro:
+        datos = [[clave, nombre, costo] for clave, nombre, costo in registro]
+        Columnas = ["Clave", "Nombre", "Costo"]
+        print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
+      else:
+        print(f"\nNo hay servicios registrados")
+      df = pd.DataFrame(datos, columns=Columnas)
+
+      while True:
+        print("\nOpciones a realizar con su reporte")
+        print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+        opcion = input("Ingrese una opción: ")
+        if opcion == "1":
+          fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+          archivo_csv = f"ReporteServiciosActivosPorClave_{fecha_actual}.csv"
+          df.to_csv(archivo_csv, index=False)
+          print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+          print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+          break
+        elif opcion == "2":
+          fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+          archivo_excel = f"ReporteServiciosActivosPorClave_{fecha_actual}.xlsx"
+          df.to_excel(archivo_excel, index=False, engine='openpyxl')
+          print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+          print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+          break
+        elif opcion == "3":
+         print("\nOK")
+         break
+        else:
+          print("\nOpción no válida, ingrese nuevamente.")
+   except Error as e:
+    print (e)
+   except Exception:
+    print (f"se produjo el error: {sys.exc_info()[0]}")
+   finally:
+    conn.close()
 def servicios_por_nombre():
-    pass
+ try:
+      with sqlite3.connect("TallerMecanico.db") as conn:
+        mi_cursor = conn.cursor()
+        mi_cursor.execute("SELECT * FROM Servicio ORDER BY nombre")
+        registro = mi_cursor.fetchall()
+
+        if registro:
+          datos = [[clave, nombre, costo] for clave, nombre, costo in registro]
+          Columnas = ["Clave", "Nombre", "Costo"]
+          print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
+        else:
+          print(f"\nNo hay servicios registrados")
+        df = pd.DataFrame(datos, columns=Columnas)
+        while True:
+          print("\nOpciones a realizar con su reporte")
+          print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+          opcion = input("Ingrese una opción: ")
+          if opcion == "1":
+            fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+            archivo_csv = f"ReporteServiciosActivosPorNombre_{fecha_actual}.csv"
+            df.to_csv(archivo_csv, index=False)
+            print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+            print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+            break
+          elif opcion == "2":
+            fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+            archivo_excel = f"ReporteServiciosActivosPorNombre_{fecha_actual}.xlsx"
+            df.to_excel(archivo_excel, index=False, engine='openpyxl')
+            print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+            print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+            break
+          elif opcion == "3":
+            print("\nOK")
+            break
+          else:
+            print("\nOpción no válida, ingrese nuevamente.")
+ except Error as e:
+   print (e)
+ except Exception:
+   print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
 
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
