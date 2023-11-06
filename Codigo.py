@@ -23,9 +23,86 @@ def validar_continuidad(mensaje):
             print("\nLa respuesta ingresada debe ser 'Si' o 'No'.")
 
 def registrar_nota():
-    pass
+    confirmar= input("¿Desea agregar una nota? (si/no)?")
+    if confirmar.lower() !="si":
+        print("\n Operacion cancelada")
+        return
+        
+    try:
+        fecha= datetime.datetime.now().strftime('%d-%m-%Y')
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('SELECT claveCliente, nombre FROM Cliente')
+            clientes= mi_cursor.fetchall()
+            print("Clientes registrados: ")
+            for cliente in clientes:
+                print(f"Clave: {cliente[0]}, Nombre: {cliente[1]}")
+    except Error as e:
+        print(e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
+            clave_c= int(input("Ingrese el ID del cliente: "))
+            if clave_c == " ":
+                print("El ID no se puede quedar vacío, vuelva a intentar")
+                continue
+            if not clave_c.isdigit():
+                print("ID INCORRECTO, INTENTE DE NUEVO")
+                continue
+
+    
+            mi_cursor.execute('SELECT * FROM Cliente WHERE claveCliente = ? ', (claveCliente,))
+            cliente = mi_cursor.fetchone()
+            if cliente:
+                mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio')
+                servicios = mi_cursor.fetchall()
+                print("Servicios disponibles: ")
+                for servicio in servicios:
+                    print(f"{Servicio[0]}. Nombre: {servicio[1]}, Costo: {servicio[2]}")
+
+                detalles = []
+                while True: 
+                    clave_serv = int(input("Ingrese la clave del servicio: "))
+                    if clave_serv == " ":
+                        print("La clave no se puede quedar vacía, vuelva a intentar")
+                        continue
+                    if not clave_serv.isdigit():
+                        print("CLAVE INCORRECTA, INTENTE DE NUEVO")
+                        continue
+
+                    mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio= ?', (clave_serv,))
+                    servicio= mi_cursor.fetchone()
+                    if servicio:
+                        cantidad= int(input("Ingrese la cantidad a requerir de este servicio: "))
+                        detalles.append((clave_serv, cantidad))
+                    else:
+                        print("El servicio no es válido")
+                    confirmar2= input("¿Desea agregar otro servicio? (si/no): ")
+                    if confirmar2.lower() != 'si':
+                        break
+
+                monto_total= sum(servicio[2] * cantidad for servicio, cantidad in zip(servicios, detalles))
+
+                mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha, clave_c, monto_total))
+                print("\n La clave asignada fue {mi_cursor.lastrowid}")
+
+                mi_cursor.execute('INSERT INTO Detalle (folio, claveServicio, cantidad) VALUES (?, ?, ?)', [(mi_cursor.lastrowid, clave_serv, cantidad) for clave_serv, cantidad in detalles])
+        
+                print("La nota fue agregada correctamente")
+    except Exception as e:
+        print(e)
 
 def cancelar_nota():
+    try:
+        can_folio = input("Ingrese el folio de la nota a cancelar: ")
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('SELECT * FROM Nota WHERE folio = ?', (can_folio,))
+            nota= mi_cursor.fetchone()
+            if nota:
+               nota= (folio, fecha, claveCliente, monto, cancelada)
+                print("Folio: {folio} ")
+                print("")
     pass
 
 def recuperar_nota():
