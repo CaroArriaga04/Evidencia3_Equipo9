@@ -101,9 +101,20 @@ def cancelar_nota():
             nota= mi_cursor.fetchone()
             if nota:
                nota= (folio, fecha, claveCliente, monto, cancelada)
-                print("Folio: {folio} ")
-                print("")
-    pass
+                print(f"Folio: {folio} ")
+                print(f"Fecha: {fecha}")
+                print(f"Clave cliente: {claveCliente}")
+                print(f"Monto: {monto}")
+                confirmar= input("¿EStá seguro de que desea cancelar esta nota? (si/no): ")
+                if confirmar.lower() == "si":
+                    mi_cursor.execute('UPDATE Nota SET cancelada= 1 WHERE folio = ?', (folio,))
+                    print("La nota fue cancelada con éxito")
+                else: 
+                    print("Operacion cancelada")
+            else: 
+                print("Nota no encontrada o ya está cancelada")
+    except Exception as e:
+        print(e)
 
 def recuperar_nota():
     pass
