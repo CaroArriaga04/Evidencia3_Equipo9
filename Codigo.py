@@ -183,7 +183,31 @@ except Exception as e:
     print(e)
 
 def consulta_por_folio():
-    pass
+    try:
+        folio = input("Ingrese el folio de la nota a consultar: ")
+
+        with sqlite3.connection("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('''
+            FROM Nota
+            INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
+            INNER JOIN Detalle ON Nota.folio= Detalle.folio \
+            INNER JOIN Servicio ON Detalle.claveServicio= Servicio.claveServicio \
+            WHERE Nota.folio = ? AND Nota.cancelada= 0
+            ''', (folio,))
+
+            nota = mi_cursor.fetchone()
+
+            if nota:
+                print(f"Folio: {nota[0]}, Fecha: {nota[1]}, Cliente: {nota[2]}, Monto: {nota[3]}")
+                print("Detalle de la nota: ")
+                print("Servicio\tCantidad")
+                print("-------------------")
+                print(f"{nota[4]}\t\t{nota[5]}")
+            else:
+                print("Nota no encontrada o está cancelada")
+    except Exception as e:
+        print(e)
 
 def agregar_cliente():
     while True:
