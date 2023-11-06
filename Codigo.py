@@ -117,7 +117,41 @@ def cancelar_nota():
         print(e)
 
 def recuperar_nota():
-    pass
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('SELECT * FROM Nota WHERE cancelada = 1')
+            notas_canceladas = mi_cursor.fetchall()
+            if notas_canceladas:
+                print("Notas canceladas: ")
+                for nota in notas_canceladas:
+                    print(f"Folio: {nota[1]}")
+                    print(f"Fecha: {nota[2]}")
+                    print(f"Clave cliente: {nota[3]}")
+                    print(f"Monto total: {nota[4]}")
+                rec_folio = input("Ingrese el folio de la nota que desea recuperar (o "x" para salir)")
+                if rec_folio !='x':
+                    mi-cursor.execute('SELECT * FROM Nota WHERE folio = ?', (rec_folio))
+                    nota= mi_cursor.fetchone()
+                    if nota and nota[5] == 1:
+                        nota= (folio, fecha, claveCliente, monto, cancelada)
+                        print(f"Folio: {folio}")
+                        print(f"Fecha: {fecha}")
+                        print(f"ID cliente: {claveCliente}")
+                        print(f"Monto: {monto}")
+                        confirmacion= input("EStá seguro que desea recuperar esta nota? (si/no): ")
+                        if confirmacion.lower() == 'si':
+                            mi_cursor.execute('UPDATE Nota SET cancelada= 0 WHERE folio= ?', (folio,))
+                            print("Nota recuperada con éxito")
+                        else:
+                            print("Nota no válida o no está cancelada")
+                    else: 
+                        print("Operacion cancelada")
+                else:
+                    print("No hay notas canceladas")
+except Exception as e:
+print(e)
+                            
 
 def consulta_por_periodo():
     pass
