@@ -154,7 +154,33 @@ print(e)
                             
 
 def consulta_por_periodo():
-    pass
+    fecha_inicial = input("Ingrese la fecha inicial (mm/dd/yyyy): ")
+    fecha_final= input("Ingrese la fecha final (mm/dd/yyyy): ")
+
+try:
+    with sqlite3.connect("TallerMecanico.db") as conn:
+        mi_cursor= conn.cursor()
+        mi_cursor.execute(''''
+            SELECT Nota.folio, Nota.fecha, Cliente.nombre, Nota.monto \
+            FROM Nota
+            INNER JOIN Cliente ON Nota.claveCliente= Cliente.claveCliente \
+            WHERE Nota.fecha BETWEEN ? AND ? AND Nota.cancelada=0
+            ''', (fecha_inicial, fecha_final))
+
+        notas = mi_cursor.fetchall()
+
+        if notas:
+            total_montos = sum(nota[3] for nota in notas)
+            promedio_montos = total_montos / len(notas)
+
+            print("Las notas que se encontraron fueron: ")
+            for nota in notas:
+                print(f"Folio: {nota[0]}, Fecha: {nota[1]}, Cliente: {nota[2]}, Monto: {nota[3]}")
+                print(f"Monto promedio: {promedio_montos}")
+        else: 
+            print("No se encontraron notas en el periodo especificado")
+except Exception as e:
+    print(e)
 
 def consulta_por_folio():
     pass
