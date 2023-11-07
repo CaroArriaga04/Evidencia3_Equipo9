@@ -2,11 +2,18 @@ import datetime
 import re
 from tabulate import tabulate
 import pandas as pd
-import csv
 import os
 import sys
 import sqlite3
 from sqlite3 import Error
+ 
+class Nota:
+    def __init__(self, folio, fecha, claveCliente, monto, cancelada):
+        self.folio = folio
+        self.fecha = fecha
+        self.claveCliente = claveCliente
+        self.monto = monto
+        self.cancelada = cancelada
 
 def validar_continuidad(mensaje):
     while True:
@@ -22,97 +29,117 @@ def validar_continuidad(mensaje):
         else:
             print("\nLa respuesta ingresada debe ser 'Si' o 'No'.")
 
-def registrar_nota():
-    confirmar= input("¿Desea agregar una nota? (si/no)?")
-    if confirmar.lower() !="si":
-        print("\n Operacion cancelada")
-        return
-        
+def registrar_nota():    
     try:
-        fecha= datetime.datetime.now().strftime('%d-%m-%Y')
+        hoy = datetime.date.today()
+        while True:
+            fecha = input("\nIngresa la fecha (dd/mm/aaaa): ")
+            try:
+                fecha = datetime.datetime.strptime(fecha, "%d/%m/%Y").date()
+                if fecha <= hoy:
+                    break
+                else:
+                    print("\n* La fecha no puede ser posterior a la actual, ingrese nuevamente *")
+            except Exception:
+                print("\n* Fecha no ingresada o invalida, ingrese nuevamente *")
+                continue
+
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute('SELECT claveCliente, nombre FROM Cliente')
+            mi_cursor.execute("SELECT claveCliente, nombre FROM Cliente")
             clientes= mi_cursor.fetchall()
-            print("Clientes registrados: ")
-            for cliente in clientes:
-                print(f"Clave: {cliente[0]}, Nombre: {cliente[1]}")
+            print("\n   Clientes registrados  ")
+            informacion = [[clave, nombre] for clave, nombre in clientes]
+            titulos = ["Clave", "Nombre"]
+            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            while True:
+                clave_c = input("\nIngrese la clave del cliente: ")
+                if clave_c == "":
+                    print("La clave no se puede quedar vacía, vuelva a intentar")
+                    continue
+                if not (bool(re.search('^[0-9]+$', clave_c))):
+                    print ("\n* Clave no valida, ingrese nuevmente *")
+                    continue
+                valores={"claveCliente":clave_c}
+                mi_cursor.execute("SELECT * FROM Cliente WHERE claveCliente = :claveCliente ", (valores))
+                cliente = mi_cursor.fetchone()
+                if cliente:
+                    mi_cursor.execute('SELECT * FROM Servicio')
+                    servicios = mi_cursor.fetchall()
+                    print("\n       Servicios disponibles")
+                    informacion = [[clave, nombre, costo] for clave, nombre, costo in servicios]
+                    titulos = ["Clave", "Nombre", "Costo"]
+                    print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+                    detalles = []
+                    while True:
+                        clave_serv = input("\nIngrese la clave del servicio: ")
+                        if clave_serv == "":
+                            print("\n* La clave no se puede quedar vacía, vuelva a intentar *")
+                            continue
+                        if not clave_serv.isdigit():
+                            print("\n* Clave incorrecta, intente de nuevo. *")
+                            continue
+                        valores = {"claveServicio": clave_serv}
+                        mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = :claveServicio', valores)
+                        servicio = mi_cursor.fetchone()
+                        if servicio:
+                            detalles.append(clave_serv)  # Agregar la clave del servicio a la lista de detalles
+                            continuar = input("\n¿Desea agregar otro servicio? (si/no): ")
+                            if continuar.lower() != "si":
+                                break
+                        else:
+                            print("\n* El servicio no existe, ingrese nuevamente *")
+                            continue
+
+                    servicios_seleccionados = [mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = ?', (clave_serv,)).fetchone() for clave_serv in detalles]
+                    monto_total = sum(servicio[2] for servicio in servicios_seleccionados)
+
+                    mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha.strftime("%d/%m/%Y"), clave_c, monto_total))
+                    print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
+
+                    mi_cursor.executemany('INSERT INTO Detalle (folio, claveServicio) VALUES (?, ?)', [(mi_cursor.lastrowid, clave_serv) for clave_serv in detalles])
+            
+                    print("La nota fue agregada correctamente")
+                    break
+                else:
+                    print("\n* El cliente no existe, vuelva a intentar. *")
+                    
     except Error as e:
         print(e)
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
-            clave_c= int(input("Ingrese el ID del cliente: "))
-            if clave_c == " ":
-                print("El ID no se puede quedar vacío, vuelva a intentar")
-                continue
-            if not clave_c.isdigit():
-                print("ID INCORRECTO, INTENTE DE NUEVO")
-                continue
-
-    
-            mi_cursor.execute('SELECT * FROM Cliente WHERE claveCliente = ? ', (claveCliente,))
-            cliente = mi_cursor.fetchone()
-            if cliente:
-                mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio')
-                servicios = mi_cursor.fetchall()
-                print("Servicios disponibles: ")
-                for servicio in servicios:
-                    print(f"{Servicio[0]}. Nombre: {servicio[1]}, Costo: {servicio[2]}")
-
-                detalles = []
-                while True: 
-                    clave_serv = int(input("Ingrese la clave del servicio: "))
-                    if clave_serv == " ":
-                        print("La clave no se puede quedar vacía, vuelva a intentar")
-                        continue
-                    if not clave_serv.isdigit():
-                        print("CLAVE INCORRECTA, INTENTE DE NUEVO")
-                        continue
-
-                    mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio= ?', (clave_serv,))
-                    servicio= mi_cursor.fetchone()
-                    if servicio:
-                        cantidad= int(input("Ingrese la cantidad a requerir de este servicio: "))
-                        detalles.append((clave_serv, cantidad))
-                    else:
-                        print("El servicio no es válido")
-                    confirmar2= input("¿Desea agregar otro servicio? (si/no): ")
-                    if confirmar2.lower() != 'si':
-                        break
-
-                monto_total= sum(servicio[2] * cantidad for servicio, cantidad in zip(servicios, detalles))
-
-                mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha, clave_c, monto_total))
-                print("\n La clave asignada fue {mi_cursor.lastrowid}")
-
-                mi_cursor.execute('INSERT INTO Detalle (folio, claveServicio, cantidad) VALUES (?, ?, ?)', [(mi_cursor.lastrowid, clave_serv, cantidad) for clave_serv, cantidad in detalles])
-        
-                print("La nota fue agregada correctamente")
-    except Exception as e:
-        print(e)
-
 def cancelar_nota():
+    while True:
+      can_folio = input("\nFolio de la nota a cancelar: ")
+
+      if can_folio == "":
+        print ("\n* Ingrese un folio. *")
+        continue
+      elif not (bool(re.search('^[0-9]+$', can_folio))):
+        print ("\n* Folio no valida, ingrese nuevmente *")
+        continue
+      else:
+        break
     try:
-        can_folio = input("Ingrese el folio de la nota a cancelar: ")
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute('SELECT * FROM Nota WHERE folio = ?', (can_folio,))
-            nota= mi_cursor.fetchone()
+            valor = {"folio":can_folio}
+            mi_cursor.execute('SELECT folio, fecha, claveCliente, monto FROM Nota WHERE folio = :folio', (valor))
+            nota = mi_cursor.fetchall()
             if nota:
-               nota= (folio, fecha, claveCliente, monto, cancelada)
-                print(f"Folio: {folio} ")
-                print(f"Fecha: {fecha}")
-                print(f"Clave cliente: {claveCliente}")
-                print(f"Monto: {monto}")
-                confirmar= input("¿EStá seguro de que desea cancelar esta nota? (si/no): ")
+                informacion = [[folio, fecha, claveCliente, monto] for folio, fecha, claveCliente, monto in nota]
+                titulos= ["Folio", "Fecha", "Clave cliente", "Monto"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+                confirmar = input("\n¿Está seguro de que desea cancelar esta nota? (Si/No): ")
                 if confirmar.lower() == "si":
-                    mi_cursor.execute('UPDATE Nota SET cancelada= 1 WHERE folio = ?', (folio,))
-                    print("La nota fue cancelada con éxito")
+                    mi_cursor.execute('UPDATE Nota SET cancelada=1 WHERE folio = :folio', (valor))
+                    print("\nLa nota fue cancelada con éxito")
                 else: 
-                    print("Operacion cancelada")
+                    print("\nOperacion cancelada")
             else: 
-                print("Nota no encontrada o ya está cancelada")
+                print("\nNota no encontrada o cancelada")
     except Exception as e:
         print(e)
 
@@ -120,71 +147,122 @@ def recuperar_nota():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute('SELECT * FROM Nota WHERE cancelada = 1')
+            mi_cursor.execute('SELECT folio, fecha, claveCliente, monto FROM Nota WHERE cancelada = 1')
             notas_canceladas = mi_cursor.fetchall()
             if notas_canceladas:
-                print("Notas canceladas: ")
-                for nota in notas_canceladas:
-                    print(f"Folio: {nota[1]}")
-                    print(f"Fecha: {nota[2]}")
-                    print(f"Clave cliente: {nota[3]}")
-                    print(f"Monto total: {nota[4]}")
-                rec_folio = input("Ingrese el folio de la nota que desea recuperar (o "x" para salir)")
-                if rec_folio !='x':
-                    mi-cursor.execute('SELECT * FROM Nota WHERE folio = ?', (rec_folio))
-                    nota= mi_cursor.fetchone()
-                    if nota and nota[5] == 1:
-                        nota= (folio, fecha, claveCliente, monto, cancelada)
-                        print(f"Folio: {folio}")
-                        print(f"Fecha: {fecha}")
-                        print(f"ID cliente: {claveCliente}")
-                        print(f"Monto: {monto}")
-                        confirmacion= input("EStá seguro que desea recuperar esta nota? (si/no): ")
+                informacion = [[folio, fecha, claveCliente, monto] for folio, fecha, claveCliente, monto in notas_canceladas]
+                titulos= ["Folio", "Fecha", "Clave cliente", "Monto"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+                while True:
+                    rec_folio = input("\nFolio de la nota a recuperar: ")
+
+                    if rec_folio == "":
+                        print ("\n* Ingrese un folio. *")
+                        continue
+                    elif not (bool(re.search('^[0-9]+$', rec_folio))):
+                        print ("\n* Folio no valida, ingrese nuevamente *")
+                        continue
+                    valor= {"folio":rec_folio}
+                    mi_cursor.execute('SELECT Servicio.nombre, Servicio.costo FROM Nota INNER JOIN Detalle ON Nota.folio \
+                                      = Detalle.folio INNER JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio \
+                                      WHERE Nota.folio = :folio' ,(valor))
+                    nota= mi_cursor.fetchall()
+                    if nota:
+                        informacion = [[nombre, costo] for  nombre, costo in nota]
+                        titulos= ["Nombre del servicio", "Costo del servicio"]
+                        print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+                        confirmacion= input("\nEstá seguro que desea recuperar esta nota? (Si/No): ")
                         if confirmacion.lower() == 'si':
-                            mi_cursor.execute('UPDATE Nota SET cancelada= 0 WHERE folio= ?', (folio,))
-                            print("Nota recuperada con éxito")
+                            mi_cursor.execute('UPDATE Nota SET cancelada= 0 WHERE folio= :folio' ,(valor))
+                            print("\nNota recuperada con éxito")
+                            break
                         else:
-                            print("Nota no válida o no está cancelada")
+                            print("\nOperacion cancelada")
+                            break
                     else: 
-                        print("Operacion cancelada")
-                else:
-                    print("No hay notas canceladas")
-except Exception as e:
-print(e)
+                        print("\n* Nota no existente, ingrese nuevamente *")
+                        continue
+            else:
+                print("\nNo hay notas canceladas")
+    except Exception as e:
+        print(e)
                             
 
 def consulta_por_periodo():
-    fecha_inicial = input("Ingrese la fecha inicial (mm/dd/yyyy): ")
-    fecha_final= input("Ingrese la fecha final (mm/dd/yyyy): ")
+    while True:
+        try:
+            fecha_inicial = input("Ingrese la fecha inicial (dd/mm/yyyy): ")
+            fecha_final = input("Ingrese la fecha final (dd/mm/yyyy): ")
+        except Exception:
+            print("\n* Las fechas ingresadas deben estar en formato dd/mm/yyyy *")
+            continue
+        if fecha_final < fecha_inicial:
+            print("\n* La fecha final no puede ser anterior a la fecha inicial *")
+            continue
+        else:
+            break
+    try:
+        with sqlite3.connect("TallerMecanico.db", detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('''
+                SELECT Nota.folio, Nota.fecha, Cliente.nombre, Nota.monto 
+                FROM Nota
+                INNER JOIN Cliente ON Nota.claveCliente= Cliente.claveCliente 
+                WHERE Date(Nota.fecha) BETWEEN date(?) AND date(?) AND Nota.cancelada=0
+                ''', (fecha_inicial, fecha_final))
 
-try:
-    with sqlite3.connect("TallerMecanico.db") as conn:
-        mi_cursor= conn.cursor()
-        mi_cursor.execute(''''
-            SELECT Nota.folio, Nota.fecha, Cliente.nombre, Nota.monto \
-            FROM Nota
-            INNER JOIN Cliente ON Nota.claveCliente= Cliente.claveCliente \
-            WHERE Nota.fecha BETWEEN ? AND ? AND Nota.cancelada=0
-            ''', (fecha_inicial, fecha_final))
+            notas = mi_cursor.fetchall()
 
-        notas = mi_cursor.fetchall()
+            if notas:
+                total_montos = sum(nota[3] for nota in notas)
+                promedio_montos = total_montos / len(notas)
 
-        if notas:
-            total_montos = sum(nota[3] for nota in notas)
-            promedio_montos = total_montos / len(notas)
-
-            print("Las notas que se encontraron fueron: ")
-            for nota in notas:
-                print(f"Folio: {nota[0]}, Fecha: {nota[1]}, Cliente: {nota[2]}, Monto: {nota[3]}")
+                print("\n      Notas por perioodo seleccionado ")
+                informacion = [[folio, fecha, nombre, monto] for folio, fecha, nombre, monto in notas]
+                titulos = ["Folio", "Fecha", "Nombre", "Monto"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
                 print(f"Monto promedio: {promedio_montos}")
-        else: 
-            print("No se encontraron notas en el periodo especificado")
-except Exception as e:
-    print(e)
+            else: 
+                print("\nNo se encontraron notas en el periodo especificado")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def consulta_por_folio():
-    pass
+    while True:
+      con_folio = input("\nFolio de la nota a consultar: ")
 
+      if con_folio == "":
+        print ("\n* Ingrese un folio. *")
+        continue
+      elif not (bool(re.search('^[0-9]+$', con_folio))):
+        print ("\n* Folio no valida, ingrese nuevmente *")
+        continue
+      else:
+        break
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            valor = {"folio":con_folio}
+            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Nota.monto,\
+                               Servicio.nombre, Servicio.costo FROM Nota INNER JOIN Detalle ON \
+                              Nota.folio = Detalle.folio INNER JOIN Servicio ON Detalle.claveServicio\
+                              = Servicio.claveServicio WHERE Nota.folio = :folio AND Nota.cancelada=0' ,(valor))
+            nota= mi_cursor.fetchall()
+            if nota:
+                informacion = [[folio, fecha, claveCliente, monto, nombre, costo] for folio, fecha, claveCliente, monto, nombre, costo in nota]
+                titulos= ["Folio", "Fecha", "Clave cliente", "Monto", "Nombre del servicio", "Costo del servicio"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))  
+            else: 
+                print("\nNota no encontrada o cancelada")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    
 def agregar_cliente():
     while True:
       nombre = input("\nNombre del cliente: ")
@@ -382,18 +460,9 @@ def cliente_busqueda_por_nombre():
 
 def agregar_servicio():
     while True:
-      print ('______________')
-      print ("SERVICIOS DISPONIBLES")
-      print ("1. afinacion")
-      print ("2. refaccion de balatas")
-      print ("3. cambio de llantas")
-      print ("4. cambio de aceite")
-      print ("5. cambio de suspension")
-      print ("6. nueva pintura")
-
       nombre = input("\nNombre del servicio: ")
       if nombre == "":
-        print ("\n* NO SE PUEDE OMITIR ESTE DATO *")
+        print ("\n* INGRESE NOMBRE DE SERVICIO *")
         continue
       elif not (bool(re.search('^[a-zA-Z ]+$', nombre))):
         print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
@@ -401,26 +470,29 @@ def agregar_servicio():
       else:
         break
 
-
     while True:
-        costo = input("\nIngrese el costo del servicio seleccionado: ")
+        costo = input("\nIngrese el costo del servicio: ")
         if costo == "":
-            print("\n* NO PUEDE ESTAR VACÍO ESTE DATO*")
+            print("\n* EL SERVICIO DEBE TENER SU COSTO, INGRESE POR FAVOR *")
             continue
-        elif not (bool(re.match(costo, 'r^[0-9]+\.[0-9]$'))):
-            print("\n*EL PRECIO NO CUMPLE EL FORMATO VALIDO (XX.XX). INTENTAR DE NUEVO *")
+        try:
+            costo = float(costo)
+            if costo != float(f"{costo:.2f}"):
+                print("\n* NO SE PERMITEN MAS DE 2 DECIMALES, INGRESE NUEVAMENTE *")
+                continue
+        except Exception:
+            print ("\n* COSTO NO VALIDO, INGRESE NUEVAMENTE *")
             continue
-        elif costo<=0.00:
-            print ("\n*EL COSTO NO PUEDE SER MENOR A 0 PESOS.*")
+        if costo <= 0:
+            print("\n* EL COSTO DEL SERVICIO DEBE SER MAYOR A 0, INGRESE NUEVAMENTE *")
             continue
         else:
             break
-
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             valores = (nombre, costo)
-            mi_cursor.execute("INSERT INTO Servicio (nombre, costo) VALUES (?,?,?)", valores)
+            mi_cursor.execute("INSERT INTO Servicio (nombre, costo) VALUES (?,?)", valores)
             print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
     except Error as e:
         print (e)
@@ -484,7 +556,7 @@ def busqueda_por_nombre_servicio():
                 Columnas = ["Clave", "Nombre", "Costo"]
                 print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
             else:
-                print(f"\nNo se encontró un cliente asociado con el nombre ingresado {v_nombre}")
+                print(f"\nNo se encontró un servicio asociado con el nombre ingresado {v_nombre}")
     except Error as e:
         print (e)
     except Exception:
@@ -518,7 +590,7 @@ def servicios_por_clave():
           break
         elif opcion == "2":
           fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
-          archivo_excel = f"ReporteServiciosActivosPorClave_{fecha_actual}.xlsx"
+          archivo_excel = f"ReporteServiciosPorClave_{fecha_actual}.xlsx"
           df.to_excel(archivo_excel, index=False, engine='openpyxl')
           print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
           print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
@@ -554,7 +626,7 @@ def servicios_por_nombre():
           opcion = input("Ingrese una opción: ")
           if opcion == "1":
             fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
-            archivo_csv = f"ReporteServiciosActivosPorNombre_{fecha_actual}.csv"
+            archivo_csv = f"ReporteServiciosPorNombre_{fecha_actual}.csv"
             df.to_csv(archivo_csv, index=False)
             print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
             print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
@@ -584,31 +656,49 @@ while True:
     print("\n1. Menu Notas\n2. Menu Clientes\n3. Menu Servicios\n4. Salir")
     opcion = input("Ingresa una opcion: ")
     if opcion == "1":
-        print("\n** Menu Notas **")
-        print("1. Registrar una nota\n2. Cancelar una nota\n3. Recuperar una nota\n4. Consultas y reportes\n5. Volver al menu principal")
-        opcion_nota = input("Ingrese una opcion: ")
-        if opcion_nota == "1":
-            registrar_nota()
-        elif opcion_nota == "2":
-            cancelar_nota()
-        elif opcion_nota == "3": 
-            recuperar_nota()
-        elif opcion_nota == "4":
-            print("\nMenu consultas y reportes")
-            print("\n1. Consulta por periodo\n2. Consulta por folio\n3. Volver al menu Notas")
-            opcion_consultas = input("Ingresa una opcion: ")
-            if opcion_consultas == "1":
-                consulta_por_periodo()
-            elif opcion_consultas == "2":
-                consulta_por_folio()
-            elif opcion_consultas == "3":
+        while True:
+            print("\n** Menu Notas **")
+            print("\n1. Registrar una nota\n2. Cancelar una nota\n3. Recuperar una nota\n4. Consultas y reportes\n5. Volver al menu principal")
+            opcion_nota = input("\nIngrese una opcion: ")
+            if opcion_nota == "":
+                print("\n* Opcion omitida, Ingrese una opcion *")
+                continue
+
+            if opcion_nota == "1":
+                if validar_continuidad("¿Estas seguro de realizar un registro?"):
+                    registrar_nota()
+                    continue
+
+            elif opcion_nota == "2":
+                if validar_continuidad("¿Estas seguro de realizar una cancelacion?"):
+                    cancelar_nota()
+                    continue
+
+            elif opcion_nota == "3": 
+                if validar_continuidad("¿Estas seguro de realizar una recuperacion?"):
+                    recuperar_nota()
+                    continue
+            elif opcion_nota == "4":
+                while True:
+                    print("\nMenu consultas y reportes")
+                    print("\n1. Consulta por periodo\n2. Consulta por folio\n3. Volver al menu Notas")
+                    opcion_consultas = input("Ingresa una opcion: ")
+                    if opcion_consultas == "1":
+                        if validar_continuidad("¿Estas seguro de realizar una consulta por periodo?"):
+                            consulta_por_periodo()
+                            continue
+                    elif opcion_consultas == "2":
+                        if validar_continuidad("¿Estas seguro de realizar una consulta por folio?"):
+                            consulta_por_folio()
+                            continue
+                    elif opcion_consultas == "3":
+                        break
+                    else:
+                        print("Opcion no valida, ingrese nuevamente.")
+            elif opcion_nota == "5":
                 break
             else:
                 print("Opcion no valida, ingrese nuevamente.")
-        elif opcion_nota == "5":
-            continue
-        else:
-            print("Opcion no valida, ingrese nuevamente.")
 
     elif opcion == "2":
         while True:
@@ -663,31 +753,50 @@ while True:
                 print("\nOpcion no valida, ingrese nuevamente.")
             
     elif opcion == "3":
-        print("\n** Menu Servicios **")
-        print("\n1. Agregar un servicio\n2. Consultas y reportes\n3. Volver al menu principal")
-        opcion_servicios = input("Ingresa una opcion: ")
-        if opcion_servicios == "1":
-            agregar_servicio()
-        elif opcion_servicios == "2":
-            print("\nMenu consultas y reportes")
-            print("\n1. Busqueda por clave de servicio\n2. Busqueda por nombre de servicio\n3. Listado de servicios\n4. Volver al menu principal")
-            opcion_consultas = input("Ingresa una opcion: ")
-            if opcion_consultas == "1":
-                busqueda_por_clave_servicio()
-            elif opcion_consultas == "2":
-                busqueda_por_nombre_servicio()
-            elif opcion_consultas == "3":
-                print("\nMenu listado de servicios")
-                print("\n1. Ordenado por clave\n2. Ordenado por nombre\n3. Volver al menu principal")
-                opcion = input("Ingresa una opcion: ")
-                if opcion == "1":
-                    servicios_por_clave()
-                elif opcion == "2":
-                    servicios_por_nombre()
-                elif opcion == "3":
+        while True:
+            print("\n** Menu Servicios **")
+            print("\n1. Agregar un servicio\n2. Consultas y reportes\n3. Volver al menu principal")
+            opcion_servicios = input("Ingresa una opcion: ")
+            if opcion_servicios == "":
+                print("\n* Opcion omitida, Ingrese una opcion *")
+                continue
+
+            if opcion_servicios == "1":
+                if validar_continuidad("¿Estas seguro de realizar un registro?"):
+                    agregar_servicio()
                     continue
-                else:
-                    print("Opcion no valida, ingrese nuevamente.")
+
+            elif opcion_servicios == "2":
+                while True:
+                    print("\nMenu consultas y reportes")
+                    print("\n1. Busqueda por clave de servicio\n2. Busqueda por nombre de servicio\n3. Listado de servicios\n4. Volver al menu servicios")
+                    opcion_consultas = input("Ingresa una opcion: ")
+
+                    if opcion_consultas == "1":
+                        busqueda_por_clave_servicio()
+
+                    elif opcion_consultas == "2":
+                        busqueda_por_nombre_servicio()
+
+                    elif opcion_consultas == "3":
+                        while True:
+                            print("\nMenu listado de servicios")
+                            print("\n1. Ordenado por clave\n2. Ordenado por nombre\n3. Volver al menu anterior")
+                            opcion = input("Ingresa una opcion: ")
+                            if opcion == "1":
+                                servicios_por_clave()
+                            elif opcion == "2":
+                                servicios_por_nombre()
+                            elif opcion == "3":
+                                break
+                            else:
+                                print("Opcion no valida, ingrese nuevamente.")
+                    elif opcion_consultas == "4":
+                        break
+            elif opcion_servicios == "3":
+                break   
+            else:
+                print("\nOpcion no valida, ingrese nuevamente.")
     elif opcion == "4":
         print("\nGracias por usar este programa. 😁")
         break
