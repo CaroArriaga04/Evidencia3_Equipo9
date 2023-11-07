@@ -33,7 +33,7 @@ def registrar_nota():
     try:
         hoy = datetime.date.today()
         while True:
-            fecha = input("\nIngresa la fecha (dd/mm/aaaa): ")
+            fecha = input("\nIngresa la fecha (dd/mm/yyyy): ")
             try:
                 fecha = datetime.datetime.strptime(fecha, "%d/%m/%Y").date()
                 if fecha <= hoy:
@@ -95,12 +95,12 @@ def registrar_nota():
                     servicios_seleccionados = [mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = ?', (clave_serv,)).fetchone() for clave_serv in detalles]
                     monto_total = sum(servicio[2] for servicio in servicios_seleccionados)
 
-                    mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha.strftime("%d/%m/%Y"), clave_c, monto_total))
+                    mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha.strftime("%Y/%m/%d"), clave_c, monto_total))
                     print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
 
                     mi_cursor.executemany('INSERT INTO Detalle (folio, claveServicio) VALUES (?, ?)', [(mi_cursor.lastrowid, clave_serv) for clave_serv in detalles])
             
-                    print("La nota fue agregada correctamente")
+                    print("¡La nota fue agregada exitosamente!")
                     break
                 else:
                     print("\n* El cliente no existe, vuelva a intentar. *")
@@ -189,12 +189,13 @@ def recuperar_nota():
     except Exception as e:
         print(e)
                             
-
 def consulta_por_periodo():
     while True:
         try:
             fecha_inicial = input("Ingrese la fecha inicial (dd/mm/yyyy): ")
             fecha_final = input("Ingrese la fecha final (dd/mm/yyyy): ")
+            fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
         except Exception:
             print("\n* Las fechas ingresadas deben estar en formato dd/mm/yyyy *")
             continue
@@ -203,15 +204,16 @@ def consulta_por_periodo():
             continue
         else:
             break
+
     try:
-        with sqlite3.connect("TallerMecanico.db", detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-            mi_cursor= conn.cursor()
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
             mi_cursor.execute('''
                 SELECT Nota.folio, Nota.fecha, Cliente.nombre, Nota.monto 
                 FROM Nota
-                INNER JOIN Cliente ON Nota.claveCliente= Cliente.claveCliente 
-                WHERE Date(Nota.fecha) BETWEEN date(?) AND date(?) AND Nota.cancelada=0
-                ''', (fecha_inicial, fecha_final))
+                INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente 
+                WHERE Nota.fecha BETWEEN ? AND ? AND Nota.cancelada = 0
+                ''', (fecha_inicial.strftime("%Y-%m-%d"), fecha_final.strftime("%Y-%m-%d")))
 
             notas = mi_cursor.fetchall()
 
@@ -219,17 +221,18 @@ def consulta_por_periodo():
                 total_montos = sum(nota[3] for nota in notas)
                 promedio_montos = total_montos / len(notas)
 
-                print("\n      Notas por perioodo seleccionado ")
+                print("\n      Notas por período seleccionado ")
                 informacion = [[folio, fecha, nombre, monto] for folio, fecha, nombre, monto in notas]
                 titulos = ["Folio", "Fecha", "Nombre", "Monto"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
                 print(f"Monto promedio: {promedio_montos}")
-            else: 
-                print("\nNo se encontraron notas en el periodo especificado")
-    except Error as e:
-        print (e)
-    except Exception:
-        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+            else:
+                print("\nNo se encontraron notas en el período especificado")
+    except sqlite3.Error as e:
+        print(f"Se produjo un error con SQLite: {e}")
+    except Exception as e:
+        print(f"Se produjo el siguiente error: {e}")
+
 
 def consulta_por_folio():
     while True:
