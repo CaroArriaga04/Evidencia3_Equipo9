@@ -191,20 +191,28 @@ def recuperar_nota():
                             
 def consulta_por_periodo():
     while True:
+        fecha_inicial = input("\nIngresa la fecha inicial (dd/mm/aaaa): ")
+        if fecha_inicial == "":
+            fecha_inicial = "01/01/2000"
+            print("\nPor omision de fecha inicial se asume 01/01/2000.")
+
+        fecha_final = input("\nIngresa la fecha final (dd/mm/aaaa): ")
+        if fecha_final == "":
+            fecha_final = datetime.date.today().strftime("%d/%m/%Y")
+            print("\nPor omision de fecha final se asume la fecha actual. ")
+
         try:
-            fecha_inicial = input("Ingrese la fecha inicial (dd/mm/yyyy): ")
-            fecha_final = input("Ingrese la fecha final (dd/mm/yyyy): ")
             fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
             fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
         except Exception:
-            print("\n* Las fechas ingresadas deben estar en formato dd/mm/yyyy *")
+            print("\n* LAS FECHAS INGRESADAS DEBEN ESTAR EN FORMATO dd/mm/yyyy *")
             continue
+        
         if fecha_final < fecha_inicial:
-            print("\n* La fecha final no puede ser anterior a la fecha inicial *")
+            print("\n* LA FECHA FINAL NO PUEDE SER ANTERIOR A LA FECHA INICIAL *")
             continue
         else:
             break
-
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
@@ -217,6 +225,9 @@ def consulta_por_periodo():
 
             notas = mi_cursor.fetchall()
 
+            informacion = []  # Define 'informacion' here
+            titulos = []  # Define 'titulos' here
+
             if notas:
                 total_montos = sum(nota[3] for nota in notas)
                 promedio_montos = total_montos / len(notas)
@@ -228,6 +239,30 @@ def consulta_por_periodo():
                 print(f"Monto promedio: {promedio_montos}")
             else:
                 print("\nNo se encontraron notas en el período especificado")
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+                opcion = input("Ingrese una opción: ")
+                if opcion == "1":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_csv = f"ReportePorPeriodo_{fecha_inicial.strftime('%m_%d_%Y')}_{fecha_final.strftime('%m_%d_%Y')}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    archivo_excel = f"ReportePorPeriodo_{fecha_inicial.strftime('%m_%d_%Y')}_{fecha_final.strftime('%m_%d_%Y')}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+                elif opcion == "3":
+                    print("\nOK")
+                    break
+                else:
+                    print("\nOpción no válida, ingrese nuevamente.")
     except sqlite3.Error as e:
         print(f"Se produjo un error con SQLite: {e}")
     except Exception as e:
