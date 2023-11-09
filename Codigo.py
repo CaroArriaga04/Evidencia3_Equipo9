@@ -126,20 +126,23 @@ def cancelar_nota():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
             valor = {"folio":can_folio}
-            mi_cursor.execute('SELECT folio, fecha, claveCliente, monto FROM Nota WHERE folio = :folio', (valor))
-            nota = mi_cursor.fetchall()
+            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo, \
+                        Nota.monto, Servicio.nombre, Servicio.costo FROM Cliente \
+                        INNER JOIN Nota ON Nota.claveCliente = Cliente.claveCliente \
+                        INNER JOIN Detalle ON Nota.folio = Detalle.folio \
+                        INNER JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio \
+                        WHERE Nota.folio = :folio AND Nota.cancelada=0' ,(valor))
+
+            nota= mi_cursor.fetchall()
             if nota:
-                informacion = [[folio, fecha, claveCliente, monto] for folio, fecha, claveCliente, monto in nota]
-                titulos= ["Folio", "Fecha", "Clave cliente", "Monto"]
+                informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto, nombre, costo] 
+                                for folio, fecha, claveCliente,nombre, rfc, correo, monto, nombre, costo in nota]
+                titulos= ["Folio", "Fecha", "Clave cliente", "Nombre Cliente", "RFC cliente", "Correo cliente",
+                        "Monto", "Nombre del servicio", "Costo del servicio"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-                confirmar = input("\n¿Está seguro de que desea cancelar esta nota? (Si/No): ")
-                if confirmar.lower() == "si":
-                    mi_cursor.execute('UPDATE Nota SET cancelada=1 WHERE folio = :folio', (valor))
-                    print("\nLa nota fue cancelada con éxito")
-                else: 
-                    print("\nOperacion cancelada")
             else: 
-                print("\nNota no encontrada o cancelada")
+                    print("\nOperacion cancelada")
+
     except Exception as e:
         print(e)
 
