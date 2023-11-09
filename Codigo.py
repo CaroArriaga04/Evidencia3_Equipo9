@@ -202,72 +202,77 @@ def consulta_por_periodo():
             print("\nPor omision de fecha final se asume la fecha actual. ")
 
         try:
-            fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
-            fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+            fecha_inicial_obj = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final_obj = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
         except Exception:
-            print("\n* LAS FECHAS INGRESADAS DEBEN ESTAR EN FORMATO dd/mm/yyyy *")
+            print("\n* Las fechas ingresadas deben estar en formato dd/mm/aaaa *")
             continue
-        
+
         if fecha_final < fecha_inicial:
-            print("\n* LA FECHA FINAL NO PUEDE SER ANTERIOR A LA FECHA INICIAL *")
+            print("\n* La fecha final no puede ser anterior a la fecha inicial *")
             continue
         else:
             break
     try:
+        if fecha_final_obj >= fecha_inicial_obj:
+            fecha_inicial = fecha_inicial_obj.strftime("%Y/%m/%d")
+            fecha_final = fecha_final_obj.strftime("%Y/%m/%d")
+
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            mi_cursor.execute('''
-                SELECT Nota.folio, Nota.fecha, Cliente.nombre, Nota.monto 
-                FROM Nota
-                INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente 
-                WHERE Nota.fecha BETWEEN ? AND ? AND Nota.cancelada = 0
-                ''', (fecha_inicial.strftime("%Y-%m-%d"), fecha_final.strftime("%Y-%m-%d")))
-
+            mi_cursor.execute("SELECT Nota.folio, Nota.fecha, Cliente.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo,\
+                                Nota.monto \
+                                FROM Nota \
+                                INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
+                                WHERE fecha BETWEEN ? AND ? AND cancelada=0", (fecha_inicial, fecha_final))
             notas = mi_cursor.fetchall()
 
-            informacion = []  # Define 'informacion' here
-            titulos = []  # Define 'titulos' here
+        if notas:
+            total_montos = sum(nota[6] for nota in notas)
+            promedio_montos = total_montos / len(notas)
 
-            if notas:
-                total_montos = sum(nota[3] for nota in notas)
-                promedio_montos = total_montos / len(notas)
+            print(f"\n                                         Notas del periodo especificado")
+            informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto] for folio, fecha, claveCliente, nombre, rfc, correo, monto in notas]
+            titulos = ["Folio", "Fecha", "Clave cliente", "Nombre cliente", "RFC cliente", "Correo cliente", "Monto"]
+            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+            print(f"Monto promedio: {promedio_montos}")
+        else:
+            print("\nNo se encontraron notas en el período especificado")
 
-                print("\n      Notas por período seleccionado ")
-                informacion = [[folio, fecha, nombre, monto] for folio, fecha, nombre, monto in notas]
-                titulos = ["Folio", "Fecha", "Nombre", "Monto"]
-                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-                print(f"Monto promedio: {promedio_montos}")
+        df = pd.DataFrame(informacion, columns=titulos)
+
+
+        while True:
+            print("\nOpciones a realizar con su reporte")
+            print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+            opcion = input("Ingrese una opción: ")
+
+            if opcion == "1":
+                fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
+                fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
+                archivo_csv = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.csv"
+                df.to_csv(archivo_csv, index=False)
+                print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                break
+            elif opcion == "2":
+                fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
+                fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
+                archivo_excel = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.xlsx"
+                df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                break
+            elif opcion == "3":
+                print("\nOK")
+                break
             else:
-                print("\nNo se encontraron notas en el período especificado")
-            df = pd.DataFrame(informacion, columns=titulos)
-            while True:
-                print("\nOpciones a realizar con su reporte")
-                print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
-                opcion = input("Ingrese una opción: ")
-                if opcion == "1":
-                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
-                    archivo_csv = f"ReportePorPeriodo_{fecha_inicial.strftime('%m_%d_%Y')}_{fecha_final.strftime('%m_%d_%Y')}.csv"
-                    df.to_csv(archivo_csv, index=False)
-                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
-                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
-                    break
-                elif opcion == "2":
-                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
-                    archivo_excel = f"ReportePorPeriodo_{fecha_inicial.strftime('%m_%d_%Y')}_{fecha_final.strftime('%m_%d_%Y')}.xlsx"
-                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
-                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
-                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
-                    break
-                elif opcion == "3":
-                    print("\nOK")
-                    break
-                else:
-                    print("\nOpción no válida, ingrese nuevamente.")
+                print("\nOpción no válida, ingrese nuevamente.")
+
     except sqlite3.Error as e:
         print(f"Se produjo un error con SQLite: {e}")
     except Exception as e:
         print(f"Se produjo el siguiente error: {e}")
-
 
 def consulta_por_folio():
     while True:
