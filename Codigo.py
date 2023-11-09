@@ -391,6 +391,66 @@ def agregar_cliente():
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
+def suspender_cliente():
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('SELECT claveCliente, nombreCliente FROM Cliente \
+                                WHERE cancelada=0')
+
+            suspender_cliente= mi_cursor.fetchall()
+            if suspender_cliente:
+                informacion = [[claveCliente, nombreCliente] 
+                                for claveCliente, nombreCliente in suspender_cliente]
+                titulos= ["Clave cliente", "Nombre Cliente"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+                while True:
+                    confirmar = input("\n¿Está seguro de que desea suspender algun cliente? (1.Si/0.No): ")
+                    if confirmar == "1":
+                        clave = input("\nClave del cliente a suspender: ")
+                        if clave == "":
+                            print ("\n* Ingrese una clave para la suspensión del cliente. *")
+                            continue
+                        elif not (bool(re.search('^[0-9]+$', clave))):
+                            print ("\n* Clave no valida, ingrese nuevmente *")
+                            continue
+                        mi_cursor= conn.cursor()
+
+                        valor = {"claveCliente":clave}
+                        mi_cursor.execute('SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
+                                            WHERE cancelada=0 AND claveCliente = :claveCliente', valor)
+                        cliente= mi_cursor.fetchall()
+                        if cliente:
+                            informacion = [[claveCliente, nombreCliente, rfc, correo] 
+                                            for claveCliente, nombreCliente, rfc, correo in cliente]
+                            titulos= ["Clave cliente", "Nombre Cliente", "RFC", "Correo"]
+                            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+                            print("\nOpciones a realizar")
+                            opcion = input("\n1. Suspender cliente\n2. Volver al menu anterior\nIngrese una opción: ")
+                            if opcion == "1":
+                                mi_cursor.execute('UPDATE Cliente SET cancelada=1 WHERE claveCliente = :claveCliente', (valor))
+                                print("\nCliente suspendido con éxito")
+                                break
+                            elif opcion == "2":
+                                print("\nOperacion cancelada")
+                                break
+                        else:
+                            print("\n* Cliente no encontrado o ya suspendido *")
+                            continue
+                    elif confirmar == "0":
+                        print("\nOperacion cancelada")
+                        break
+                    else:
+                        print("\nOpción no válida, ingrese nuevamente.")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
+def recuperar_cliente():
+    pass
+
 def clientes_ordenados_por_claves():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
@@ -778,7 +838,7 @@ while True:
     elif opcion == "2":
         while True:
             print("\n** Menu Clientes **")
-            print("\n1. Agregar un cliente\n2. Consultas y reportes\n3. Volver al menu principal")
+            print("\n1. Agregar un cliente\n2. Suspender un cliente\n3. Recuperar un cliente \n4. Consultas y reportes\n5. Volver al menu principal")
             opcion_clientes = input("Ingrese una opcion: ")
             if opcion_clientes == "":
                 print("\n* Opcion omitida, Ingrese una opcion *")
@@ -788,8 +848,18 @@ while True:
                 if validar_continuidad("¿Estas seguro de realizar un registro?"):
                     agregar_cliente()
                     continue
+            
+            if opcion_clientes == "2":
+                if validar_continuidad("¿Estas seguro de suspender un cliente?"):
+                    suspender_cliente()
+                    continue
+            
+            if opcion_clientes == "3":
+                if validar_continuidad("¿Estas seguro de recuperar un cliente?"):
+                    recuperar_cliente()
+                    continue
 
-            elif opcion_clientes == "2":
+            elif opcion_clientes == "4":
                 while True:
                     print("\nMenu consultas y reportes")
                     print("\n1. Listado de clientes registrados\n2. Busqueda por clave\n3. Busqueda por nombre\n4. Volver al menu de clientes")
@@ -822,7 +892,7 @@ while True:
                         break
                     else:
                         print("\nOpcion no valida, ingrese nuevamente.")
-            elif opcion_clientes == "3":
+            elif opcion_clientes == "5":
                 break
             else:
                 print("\nOpcion no valida, ingrese nuevamente.")
