@@ -22,7 +22,7 @@ def validar_continuidad(mensaje):
             print("\nRespuesta omitida, ingrese nuevamente.")
             continue
         elif confirmar.upper() in ("N", "NO"):
-            return False
+            break
         elif confirmar.upper() in ("S", "SI"):
             print("\nDe acuerdo.")
             return True
@@ -46,8 +46,11 @@ def registrar_nota():
 
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute("SELECT claveCliente, nombreCliente FROM Cliente")
+            mi_cursor.execute("SELECT claveCliente, nombreCliente FROM Cliente where canceladaCliente = 0")
             clientes= mi_cursor.fetchall()
+            if not clientes:
+                print("\n* No hay clientes registrados, operación registrar nota cancelada *")
+                return
             print("\n   Clientes registrados  ")
             informacion = [[clave, nombreCliente] for clave, nombreCliente in clientes]
             titulos = ["Clave", "Nombre"]
@@ -66,6 +69,9 @@ def registrar_nota():
                 if cliente:
                     mi_cursor.execute('SELECT * FROM Servicio')
                     servicios = mi_cursor.fetchall()
+                    if not servicios:
+                        print("\n* No hay servicios disponibles, operación registrar nota cancelada *")
+                        return
                     print("\n       Servicios disponibles")
                     informacion = [[clave, nombre, costo] for clave, nombre, costo in servicios]
                     titulos = ["Clave", "Nombre", "Costo"]
@@ -91,10 +97,8 @@ def registrar_nota():
                         else:
                             print("\n* El servicio no existe, ingrese nuevamente *")
                             continue
-
                     servicios_seleccionados = [mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = ?', (clave_serv,)).fetchone() for clave_serv in detalles]
                     monto_total = sum(servicio[2] for servicio in servicios_seleccionados)
-
                     mi_cursor.execute('INSERT INTO Nota (fecha, claveCliente, monto) VALUES (?, ?, ?)', (fecha.strftime("%Y/%m/%d"), clave_c, monto_total))
                     print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
 
@@ -104,9 +108,8 @@ def registrar_nota():
                     break
                 else:
                     print("\n* El cliente no existe, vuelva a intentar. *")
-                    
     except Error as e:
-        print(e)
+        print (e)
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
@@ -163,10 +166,10 @@ def recuperar_nota():
                                 FROM Nota \
                                 INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
                                 WHERE cancelada=1")
-            notas_canceladas = mi_cursor.fetchall()
-            if notas_canceladas:
+            nota = mi_cursor.fetchall()
+            if nota:
                 informacion = [[folio, fecha, claveCliente, nombreCliente, rfc, correo, monto] 
-                               for folio, fecha, claveCliente, nombreCliente, rfc, correo, monto in notas_canceladas]
+                               for folio, fecha, claveCliente, nombreCliente, rfc, correo, monto in nota]
                 titulos = ["Folio", "Fecha", "Clave cliente", "Nombre cliente", "RFC cliente", "Correo cliente", "Monto"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
 
@@ -304,9 +307,9 @@ def consulta_por_folio():
                   WHERE cancelada = 0 \
                   ORDER BY Nota.folio')
             
-            notas_canceladas = mi_cursor.fetchall()
-            if notas_canceladas:
-                informacion = [[folio, fecha, nombreCliente] for folio, fecha, nombreCliente in notas_canceladas]
+            nota = mi_cursor.fetchall()
+            if nota:
+                informacion = [[folio, fecha, nombreCliente] for folio, fecha, nombreCliente in nota]
                 titulos= ["Folio", "Fecha", "Nombre cliente"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
                 
@@ -396,7 +399,7 @@ def suspender_cliente():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
             mi_cursor.execute('SELECT claveCliente, nombreCliente FROM Cliente \
-                                WHERE cancelada=0')
+                                WHERE canceladaCliente=0')
 
             suspender_cliente= mi_cursor.fetchall()
             if suspender_cliente:
@@ -408,18 +411,19 @@ def suspender_cliente():
                 while True:
                     confirmar = input("\n¿Está seguro de que desea suspender algun cliente? (1.Si/0.No): ")
                     if confirmar == "1":
-                        clave = input("\nClave del cliente a suspender: ")
-                        if clave == "":
-                            print ("\n* Ingrese una clave para la suspensión del cliente. *")
-                            continue
-                        elif not (bool(re.search('^[0-9]+$', clave))):
-                            print ("\n* Clave no valida, ingrese nuevmente *")
-                            continue
+                        while True:
+                            clave = input("\nClave del cliente a suspender: ")
+                            if clave == "" or clave.isspace():
+                                print ("\n* Ingrese una clave para la suspensión del cliente. *")
+                            elif not (bool(re.search('^[0-9]+$', clave))):
+                                print ("\n* Clave no valida, ingrese nuevmente *")
+                            else:
+                                break
                         mi_cursor= conn.cursor()
 
                         valor = {"claveCliente":clave}
                         mi_cursor.execute('SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
-                                            WHERE cancelada=0 AND claveCliente = :claveCliente', valor)
+                                            WHERE canceladaCliente=0 AND claveCliente = :claveCliente', valor)
                         cliente= mi_cursor.fetchall()
                         if cliente:
                             informacion = [[claveCliente, nombreCliente, rfc, correo] 
@@ -429,7 +433,7 @@ def suspender_cliente():
                             print("\nOpciones a realizar")
                             opcion = input("\n1. Suspender cliente\n2. Volver al menu anterior\nIngrese una opción: ")
                             if opcion == "1":
-                                mi_cursor.execute('UPDATE Cliente SET cancelada=1 WHERE claveCliente = :claveCliente', (valor))
+                                mi_cursor.execute('UPDATE Cliente SET canceladaCliente=1 WHERE claveCliente = :claveCliente', (valor))
                                 print("\nCliente suspendido con éxito")
                                 break
                             elif opcion == "2":
@@ -449,7 +453,62 @@ def suspender_cliente():
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def recuperar_cliente():
-    pass
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor= conn.cursor()
+            mi_cursor.execute('SELECT claveCliente, nombreCliente FROM Cliente \
+                                WHERE canceladaCliente=1')
+
+            suspender_cliente= mi_cursor.fetchall()
+            if suspender_cliente:
+                informacion = [[claveCliente, nombreCliente] 
+                                for claveCliente, nombreCliente in suspender_cliente]
+                titulos= ["Clave cliente", "Nombre Cliente"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+                while True:
+                    confirmar = input("\n¿Está seguro de que desea recuperar algun cliente? (1.Si/0.No): ")
+                    if confirmar == "1":
+                        while True:
+                            clave = input("\nClave del cliente a recuperar: ")
+                            if clave == "" or clave.isspace():
+                                print ("\n* Ingrese una clave para la recuperacion del cliente. *")
+                            elif not (bool(re.search('^[0-9]+$', clave))):
+                                print ("\n* Clave no valida, ingrese nuevmente *")
+                            else:
+                                break
+                        mi_cursor= conn.cursor()
+
+                        valor = {"claveCliente":clave}
+                        mi_cursor.execute('SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
+                                            WHERE canceladaCliente=1 AND claveCliente = :claveCliente', valor)
+                        cliente= mi_cursor.fetchall()
+                        if cliente:
+                            informacion = [[claveCliente, nombreCliente, rfc, correo] 
+                                            for claveCliente, nombreCliente, rfc, correo in cliente]
+                            titulos= ["Clave cliente", "Nombre Cliente", "RFC", "Correo"]
+                            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+                            print("\nOpciones a realizar")
+                            opcion = input("\n1. Recuperar cliente\n2. Volver al menu anterior\nIngrese una opción: ")
+                            if opcion == "1":
+                                mi_cursor.execute('UPDATE Cliente SET canceladaCliente=0 WHERE claveCliente = :claveCliente', (valor))
+                                print("\nCliente recuperado con éxito")
+                                break
+                            elif opcion == "2":
+                                print("\nOperacion cancelada")
+                                break
+                        else:
+                            print("\n* Cliente no encontrado o ya recuperado *")
+                            continue
+                    elif confirmar == "0":
+                        print("\nOperacion cancelada")
+                        break
+                    else:
+                        print("\nOpción no válida, solamente 1 o 0.")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def clientes_ordenados_por_claves():
     try:

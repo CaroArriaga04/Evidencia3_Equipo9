@@ -7,7 +7,7 @@ try:
         mi_cursor = conn.cursor()
         mi_cursor.execute("CREATE TABLE IF NOT EXISTS Cliente\
                           (claveCliente INTEGER PRIMARY KEY, nombreCliente TEXT NOT NULL, rfc TEXT NOT NULL, correo TEXT NOT NULL, \
-                          cancelada INTEGER DEFAULT 0);")
+                          canceladaCliente INTEGER DEFAULT 0);")
         mi_cursor.execute("CREATE TABLE IF NOT EXISTS Nota\
                           (folio INTEGER PRIMARY KEY, fecha timestamp NOT NULL, monto REAL,cancelada INTEGER DEFAULT 0, claveCliente INTEGER NOT NULL,\
                            FOREIGN KEY(claveCliente) REFERENCES Cliente(claveCliente));")
