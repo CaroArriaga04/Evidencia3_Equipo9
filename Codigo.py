@@ -46,10 +46,10 @@ def registrar_nota():
 
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute("SELECT claveCliente, nombre FROM Cliente")
+            mi_cursor.execute("SELECT claveCliente, nombreCliente FROM Cliente")
             clientes= mi_cursor.fetchall()
             print("\n   Clientes registrados  ")
-            informacion = [[clave, nombre] for clave, nombre in clientes]
+            informacion = [[clave, nombreCliente] for clave, nombreCliente in clientes]
             titulos = ["Clave", "Nombre"]
             print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             while True:
@@ -126,7 +126,7 @@ def cancelar_nota():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
             valor = {"folio":can_folio}
-            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo, \
+            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombreCliente, Cliente.rfc, Cliente.correo, \
                         Nota.monto, Servicio.nombre, Servicio.costo FROM Cliente \
                         INNER JOIN Nota ON Nota.claveCliente = Cliente.claveCliente \
                         INNER JOIN Detalle ON Nota.folio = Detalle.folio \
@@ -135,62 +135,82 @@ def cancelar_nota():
 
             nota= mi_cursor.fetchall()
             if nota:
-                informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto, nombre, costo] 
-                                for folio, fecha, claveCliente,nombre, rfc, correo, monto, nombre, costo in nota]
+                informacion = [[folio, fecha, claveCliente, nombreCliente, rfc, correo, monto, nombre, costo] 
+                                for folio, fecha, claveCliente, nombreCliente, rfc, correo, monto, nombre, costo in nota]
                 titulos= ["Folio", "Fecha", "Clave cliente", "Nombre Cliente", "RFC cliente", "Correo cliente",
                         "Monto", "Nombre del servicio", "Costo del servicio"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-            else: 
+                confirmar = input("\n¿Está seguro de que desea cancelar esta nota? (Si/No): ")
+                if confirmar.lower() == "si":
+                    mi_cursor.execute('UPDATE Nota SET cancelada=1 WHERE folio = :folio', (valor))
+                    print("\nLa nota fue cancelada con éxito")
+                else: 
                     print("\nOperacion cancelada")
+            else: 
+                print("\nNota no encontrada o cancelada")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
-    except Exception as e:
-        print(e)
 
 def recuperar_nota():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute('SELECT folio, fecha, claveCliente, monto FROM Nota WHERE cancelada = 1')
+            mi_cursor.execute("SELECT Nota.folio, Nota.fecha, Cliente.claveCliente, Cliente.nombreCliente, Cliente.rfc, Cliente.correo,\
+                                Nota.monto \
+                                FROM Nota \
+                                INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
+                                WHERE cancelada=1")
             notas_canceladas = mi_cursor.fetchall()
             if notas_canceladas:
-                informacion = [[folio, fecha, claveCliente, monto] for folio, fecha, claveCliente, monto in notas_canceladas]
-                titulos= ["Folio", "Fecha", "Clave cliente", "Monto"]
+                informacion = [[folio, fecha, claveCliente, nombreCliente, rfc, correo, monto] 
+                               for folio, fecha, claveCliente, nombreCliente, rfc, correo, monto in notas_canceladas]
+                titulos = ["Folio", "Fecha", "Clave cliente", "Nombre cliente", "RFC cliente", "Correo cliente", "Monto"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
 
                 while True:
-                    rec_folio = input("\nFolio de la nota a recuperar: ")
+                    confirmar = input("\nDesea recuperar alguna nota? (Si/No): ")
+                    if confirmar.lower() == "si":
+                        rec_folio = input("\nFolio de la nota a recuperar: ")
 
-                    if rec_folio == "":
-                        print ("\n* Ingrese un folio. *")
-                        continue
-                    elif not (bool(re.search('^[0-9]+$', rec_folio))):
-                        print ("\n* Folio no valida, ingrese nuevamente *")
-                        continue
-                    valor= {"folio":rec_folio}
-                    mi_cursor.execute('SELECT Servicio.nombre, Servicio.costo FROM Nota INNER JOIN Detalle ON Nota.folio \
-                                      = Detalle.folio INNER JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio \
-                                      WHERE Nota.folio = :folio' ,(valor))
-                    nota= mi_cursor.fetchall()
-                    if nota:
-                        informacion = [[nombre, costo] for  nombre, costo in nota]
-                        titulos= ["Nombre del servicio", "Costo del servicio"]
-                        print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+                        if rec_folio == "":
+                            print ("\n* Ingrese un folio. *")
+                            continue
+                        elif not (bool(re.search('^[0-9]+$', rec_folio))):
+                            print ("\n* Folio no valida, ingrese nuevamente *")
+                            continue
+                        valor= {"folio":rec_folio}
+                        mi_cursor.execute('SELECT Servicio.nombre, Servicio.costo FROM Nota INNER JOIN Detalle ON Nota.folio \
+                                        = Detalle.folio INNER JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio \
+                                        WHERE Nota.folio = :folio' ,(valor))
+                        nota= mi_cursor.fetchall()
+                        if nota:
+                            informacion = [[nombre, costo] for  nombre, costo in nota]
+                            titulos= ["Nombre del servicio", "Costo del servicio"]
+                            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
 
-                        confirmacion= input("\nEstá seguro que desea recuperar esta nota? (Si/No): ")
-                        if confirmacion.lower() == 'si':
-                            mi_cursor.execute('UPDATE Nota SET cancelada= 0 WHERE folio= :folio' ,(valor))
-                            print("\nNota recuperada con éxito")
-                            break
-                        else:
-                            print("\nOperacion cancelada")
-                            break
-                    else: 
-                        print("\n* Nota no existente, ingrese nuevamente *")
-                        continue
+                            confirmacion= input("\nEstá seguro que desea recuperar esta nota? (Si/No): ")
+                            if confirmacion.lower() == 'si':
+                                mi_cursor.execute('UPDATE Nota SET cancelada= 0 WHERE folio= :folio' ,(valor))
+                                print("\nNota recuperada con éxito")
+                                break
+                            else:
+                                print("\nOperacion cancelada")
+                                break
+                        else: 
+                            print("\n* Nota no existente, ingrese nuevamente *")
+                            continue
+                    elif confirmar.lower() == "no":
+                        print("\nOperacion cancelada")
+                        break
             else:
                 print("\nNo hay notas canceladas")
-    except Exception as e:
-        print(e)
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
                             
 def consulta_por_periodo():
     while True:
@@ -223,7 +243,7 @@ def consulta_por_periodo():
 
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            mi_cursor.execute("SELECT Nota.folio, Nota.fecha, Cliente.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo,\
+            mi_cursor.execute("SELECT Nota.folio, Nota.fecha, Cliente.claveCliente, Cliente.nombreCliente, Cliente.rfc, Cliente.correo,\
                                 Nota.monto \
                                 FROM Nota \
                                 INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
@@ -235,7 +255,8 @@ def consulta_por_periodo():
             promedio_montos = total_montos / len(notas)
 
             print(f"\n                                         Notas del periodo especificado")
-            informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto] for folio, fecha, claveCliente, nombre, rfc, correo, monto in notas]
+            informacion = [[folio, fecha, claveCliente, nombreCliente, rfc, correo, monto] 
+                           for folio, fecha, claveCliente, nombreCliente, rfc, correo, monto in notas]
             titulos = ["Folio", "Fecha", "Clave cliente", "Nombre cliente", "RFC cliente", "Correo cliente", "Monto"]
             print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             print(f"Monto promedio: {promedio_montos}")
@@ -269,24 +290,23 @@ def consulta_por_periodo():
                     print("\nOpción no válida, ingrese nuevamente.")
         else:
             print("\nNo se encontraron notas en el período especificado")
-
-    except sqlite3.Error as e:
-        print(f"Se produjo un error con SQLite: {e}")
-    except Exception as e:
-        print(f"Se produjo el siguiente error: {e}")
+    except Error as e:
+        print (e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def consulta_por_folio():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Cliente.nombre FROM Nota \
+            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Cliente.nombreCliente FROM Nota \
                   INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
                   WHERE cancelada = 0 \
                   ORDER BY Nota.folio')
             
             notas_canceladas = mi_cursor.fetchall()
             if notas_canceladas:
-                informacion = [[folio, fecha, nombre] for folio, fecha, nombre in notas_canceladas]
+                informacion = [[folio, fecha, nombreCliente] for folio, fecha, nombreCliente in notas_canceladas]
                 titulos= ["Folio", "Fecha", "Nombre cliente"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
                 
@@ -301,7 +321,7 @@ def consulta_por_folio():
                         continue
                     mi_cursor= conn.cursor()
                     valor = {"folio":con_folio}
-                    mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo, \
+                    mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombreCliente, Cliente.rfc, Cliente.correo, \
                         Nota.monto, Servicio.nombre, Servicio.costo FROM Cliente \
                         INNER JOIN Nota ON Nota.claveCliente = Cliente.claveCliente \
                         INNER JOIN Detalle ON Nota.folio = Detalle.folio \
@@ -310,8 +330,8 @@ def consulta_por_folio():
 
                     nota= mi_cursor.fetchall()
                     if nota:
-                        informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto, nombre, costo] 
-                                       for folio, fecha, claveCliente,nombre, rfc, correo, monto, nombre, costo in nota]
+                        informacion = [[folio, fecha, claveCliente, nombreCliente, rfc, correo, monto, nombre, costo] 
+                                       for folio, fecha, claveCliente,nombreCliente, rfc, correo, monto, nombre, costo in nota]
                         titulos= ["Folio", "Fecha", "Clave cliente", "Nombre Cliente", "RFC cliente", "Correo cliente",
                                   "Monto", "Nombre del servicio", "Costo del servicio"]
                         print(tabulate(informacion, titulos, tablefmt="fancy_grid"))  
@@ -364,14 +384,12 @@ def agregar_cliente():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             valores = (nombre, rfc, correo)
-            mi_cursor.execute("INSERT INTO Cliente (nombre, rfc, correo) VALUES (?,?,?)", valores)
+            mi_cursor.execute("INSERT INTO Cliente (nombreCliente, rfc, correo) VALUES (?,?,?)", valores)
             print(f"\nLa clave asignada fue {mi_cursor.lastrowid}")
     except Error as e:
         print (e)
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-    finally:
-        conn.close()
 
 def clientes_ordenados_por_claves():
     try:
@@ -381,8 +399,8 @@ def clientes_ordenados_por_claves():
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
-                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
                 print(f"\nNo hay clientes registrados")
@@ -423,8 +441,8 @@ def clientes_ordenados_por_nombres():
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
-                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
                 print(f"\nNo hay clientes registrados")
@@ -477,8 +495,8 @@ def cliente_busqueda_por_clave():
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
-                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
                 print(f"\nNo se encontró un cliente asociado con la clave {valor_clave}")
@@ -508,8 +526,8 @@ def cliente_busqueda_por_nombre():
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombre, rfc, correo] for clave, nombre, rfc, correo in registro]
-                titulos = ["Clave", "Nombre", "RFC", "Correo"]
+                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
                 print(f"\nNo se encontró un cliente asociado con el nombre ingresado {valor_nombre}")
@@ -558,8 +576,6 @@ def agregar_servicio():
         print (e)
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-    finally:
-        conn.close()
 
 def busqueda_por_clave_servicio():
     while True:
@@ -664,8 +680,7 @@ def servicios_por_clave():
     print (e)
    except Exception:
     print (f"se produjo el error: {sys.exc_info()[0]}")
-   finally:
-    conn.close()
+
 def servicios_por_nombre():
  try:
       with sqlite3.connect("TallerMecanico.db") as conn:
