@@ -84,7 +84,7 @@ def registrar_nota():
                         mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = :claveServicio', valores)
                         servicio = mi_cursor.fetchone()
                         if servicio:
-                            detalles.append(clave_serv)  # Agregar la clave del servicio a la lista de detalles
+                            detalles.append(clave_serv) 
                             continuar = input("\n¿Desea agregar otro servicio? (si/no): ")
                             if continuar.lower() != "si":
                                 break
@@ -236,38 +236,36 @@ def consulta_por_periodo():
             titulos = ["Folio", "Fecha", "Clave cliente", "Nombre cliente", "RFC cliente", "Correo cliente", "Monto"]
             print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             print(f"Monto promedio: {promedio_montos}")
+
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
+                opcion = input("Ingrese una opción: ")
+
+                if opcion == "1":
+                    fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
+                    fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
+                    archivo_csv = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
+                    fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
+                    archivo_excel = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+                elif opcion == "3":
+                    print("\nOK")
+                    break
+                else:
+                    print("\nOpción no válida, ingrese nuevamente.")
         else:
             print("\nNo se encontraron notas en el período especificado")
-
-        df = pd.DataFrame(informacion, columns=titulos)
-
-
-        while True:
-            print("\nOpciones a realizar con su reporte")
-            print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
-            opcion = input("Ingrese una opción: ")
-
-            if opcion == "1":
-                fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
-                fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
-                archivo_csv = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.csv"
-                df.to_csv(archivo_csv, index=False)
-                print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
-                print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
-                break
-            elif opcion == "2":
-                fecha_inicial_str = fecha_inicial_obj.strftime('%d_%m_%Y')
-                fecha_final_str = fecha_final_obj.strftime('%d_%m_%Y')
-                archivo_excel = f"ReportePorPeriodo_{fecha_inicial_str}_{fecha_final_str}.xlsx"
-                df.to_excel(archivo_excel, index=False, engine='openpyxl')
-                print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
-                print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
-                break
-            elif opcion == "3":
-                print("\nOK")
-                break
-            else:
-                print("\nOpción no válida, ingrese nuevamente.")
 
     except sqlite3.Error as e:
         print(f"Se produjo un error con SQLite: {e}")
@@ -275,37 +273,53 @@ def consulta_por_periodo():
         print(f"Se produjo el siguiente error: {e}")
 
 def consulta_por_folio():
-    while True:
-      con_folio = input("\nFolio de la nota a consultar: ")
-
-      if con_folio == "":
-        print ("\n* Ingrese un folio. *")
-        continue
-      elif not (bool(re.search('^[0-9]+$', con_folio))):
-        print ("\n* Folio no valida, ingrese nuevmente *")
-        continue
-      else:
-        break
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor= conn.cursor()
-            valor = {"folio":con_folio}
-            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Nota.monto,\
-                               Servicio.nombre, Servicio.costo FROM Nota INNER JOIN Detalle ON \
-                              Nota.folio = Detalle.folio INNER JOIN Servicio ON Detalle.claveServicio\
-                              = Servicio.claveServicio WHERE Nota.folio = :folio AND Nota.cancelada=0' ,(valor))
-            nota= mi_cursor.fetchall()
-            if nota:
-                informacion = [[folio, fecha, claveCliente, monto, nombre, costo] for folio, fecha, claveCliente, monto, nombre, costo in nota]
-                titulos= ["Folio", "Fecha", "Clave cliente", "Monto", "Nombre del servicio", "Costo del servicio"]
-                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))  
-            else: 
-                print("\nNota no encontrada o cancelada")
+            mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Cliente.nombre FROM Nota \
+                  INNER JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente \
+                  WHERE cancelada = 0 \
+                  ORDER BY Nota.folio')
+            
+            notas_canceladas = mi_cursor.fetchall()
+            if notas_canceladas:
+                informacion = [[folio, fecha, nombre] for folio, fecha, nombre in notas_canceladas]
+                titulos= ["Folio", "Fecha", "Nombre cliente"]
+                print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+                
+                while True:
+                    con_folio = input("\nFolio de la nota a consultar: ")
+
+                    if con_folio == "":
+                        print ("\n* Ingrese un folio. *")
+                        continue
+                    elif not (bool(re.search('^[0-9]+$', con_folio))):
+                        print ("\n* Folio no valida, ingrese nuevmente *")
+                        continue
+                    mi_cursor= conn.cursor()
+                    valor = {"folio":con_folio}
+                    mi_cursor.execute('SELECT Nota.folio, Nota.fecha, Nota.claveCliente, Cliente.nombre, Cliente.rfc, Cliente.correo, \
+                        Nota.monto, Servicio.nombre, Servicio.costo FROM Cliente \
+                        INNER JOIN Nota ON Nota.claveCliente = Cliente.claveCliente \
+                        INNER JOIN Detalle ON Nota.folio = Detalle.folio \
+                        INNER JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio \
+                        WHERE Nota.folio = :folio AND Nota.cancelada=0' ,(valor))
+
+                    nota= mi_cursor.fetchall()
+                    if nota:
+                        informacion = [[folio, fecha, claveCliente, nombre, rfc, correo, monto, nombre, costo] 
+                                       for folio, fecha, claveCliente,nombre, rfc, correo, monto, nombre, costo in nota]
+                        titulos= ["Folio", "Fecha", "Clave cliente", "Nombre Cliente", "RFC cliente", "Correo cliente",
+                                  "Monto", "Nombre del servicio", "Costo del servicio"]
+                        print(tabulate(informacion, titulos, tablefmt="fancy_grid"))  
+                        break
+                    else: 
+                        print("\nNota no encontrada o cancelada")
     except Error as e:
         print (e)
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-    
+
 def agregar_cliente():
     while True:
       nombre = input("\nNombre del cliente: ")
