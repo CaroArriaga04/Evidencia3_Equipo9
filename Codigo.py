@@ -696,6 +696,64 @@ def agregar_servicio():
     except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
+def suspender_servicio():
+   try:
+       with sqlite3.connect("TallerMecanico.db") as conn:
+           mi_cursor = conn.cursor()
+           mi_cursor.execute('SELECT claveServicio, nombre FROM Servicio WHERE canceladaServicio=0')
+           servicios = mi_cursor.fetchall()
+
+           if servicios:
+              campos = [[claveServicio, nombre] for claveServicio, nombre in servicios]
+              alias = ["Clave Servicio", "Nombre Servicio"]
+              print(tabulate(campos, alias, tablefmt="pretty"))
+
+              while True:
+                    confirmacion = input("\n¿Desea suspender algún servicio? (Si: 1 / No: 0): ")
+                    if confirmacion == "1" :
+                        while True:
+                            clave= input("\nIngrese la clave del servicio a suspender: ")
+                            if clave.isspace():
+                               print("NO SE PUEDE OMITIR LA OPCION")
+                            else:
+                                break
+
+
+                         valor= {"claveServicio": clave}
+                         mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio WHERE canceladaServicio=0 AND claveServicio = :claveServicio')
+                         servicio = mi_cursor.fetchall()
+
+                         if servicio:
+                            campos = [[claveServicio, nombre, costo] for claveServicio, nombre, costo in servicio]
+                            alias = ["Clave Servicio", "Nombre Servicio", "Costo Servicio"]
+                            print(tabulate(campos, alias, tablefmt="pretty"))
+                            print("\n**Opciones a realizar: ")
+                            opcion = input("\n1. Suspender servicio\n2. Volver al menú principal")
+
+                            if opcion == "1":
+                               mi_cursor.execute('UPDATE Servicio SET canceladaServicio=1 WHERE claveServicio= :claveServicio', valor)
+                               print("\nSe suspendió el servicio exitosamente")
+                               break
+                            elif opcion ==  "2":
+                                 print("\nOperacion cancelada")
+                                 break
+                            else: 
+                                print("\nOperacion no válida, ingrese nuevamente")
+                                break
+                         else: 
+                            print("\n No se pudo encontrar el servicio o fue cancelado")
+                    elif confirmacion == "0":
+                         print("\nOperación cancelada")
+                    else: 
+                        print("\nOpción no válida, ingrese nuevamente")
+   except Error as e: 
+      print(e)
+   except Exceptcion:
+      print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    
+                             
+           
+
 def busqueda_por_clave_servicio():
     while True:
       v_clave = input("\nClave del servicio a consultar: ")
