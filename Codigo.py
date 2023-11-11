@@ -64,19 +64,19 @@ def registrar_nota():
                     print ("\n* Clave no valida, ingrese nuevmente *")
                     continue
                 valores={"claveCliente":clave_c}
-                mi_cursor.execute("SELECT * FROM Cliente WHERE claveCliente = :claveCliente ", (valores))
+                mi_cursor.execute("SELECT * FROM Cliente WHERE claveCliente = :claveCliente \
+                                  AND canceladaCliente = 0", (valores))
                 cliente = mi_cursor.fetchone()
                 if cliente:
-                    mi_cursor.execute('SELECT * FROM Servicio')
+                    mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio WHERE canceladaServicio = 0')
                     servicios = mi_cursor.fetchall()
                     if not servicios:
                         print("\n* No hay servicios disponibles, operación registrar nota cancelada *")
                         return
                     print("\n       Servicios disponibles")
-                    informacion = [[clave, nombre, costo] for clave, nombre, costo in servicios]
+                    informacion = [[claveServicio, nombre, costo] for claveServicio, nombre, costo in servicios]
                     titulos = ["Clave", "Nombre", "Costo"]
                     print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-
                     detalles = []
                     while True:
                         clave_serv = input("\nIngrese la clave del servicio: ")
@@ -87,7 +87,8 @@ def registrar_nota():
                             print("\n* Clave incorrecta, intente de nuevo. *")
                             continue
                         valores = {"claveServicio": clave_serv}
-                        mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = :claveServicio', valores)
+                        mi_cursor.execute('SELECT * FROM Servicio WHERE claveServicio = :claveServicio \
+                                          AND canceladaServicio = 0', valores)
                         servicio = mi_cursor.fetchone()
                         if servicio:
                             detalles.append(clave_serv) 
@@ -706,7 +707,7 @@ def suspender_servicio():
            if servicios:
               campos = [[claveServicio, nombre] for claveServicio, nombre in servicios]
               alias = ["Clave Servicio", "Nombre Servicio"]
-              print(tabulate(campos, alias, tablefmt="pretty"))
+              print(tabulate(campos, alias, tablefmt="fancy_grid"))
 
               while True:
                     confirmacion = input("\n¿Desea suspender algún servicio? (Si: 1 / No: 0): ")
@@ -717,18 +718,17 @@ def suspender_servicio():
                                print("NO SE PUEDE OMITIR LA OPCION")
                             else:
                                 break
+                        valor= {"claveServicio": clave}
+                        mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio \
+                                          WHERE canceladaServicio=0 AND claveServicio = :claveServicio', (valor))
+                        servicio = mi_cursor.fetchall()
 
-
-                         valor= {"claveServicio": clave}
-                         mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio WHERE canceladaServicio=0 AND claveServicio = :claveServicio')
-                         servicio = mi_cursor.fetchall()
-
-                         if servicio:
+                        if servicio:
                             campos = [[claveServicio, nombre, costo] for claveServicio, nombre, costo in servicio]
                             alias = ["Clave Servicio", "Nombre Servicio", "Costo Servicio"]
-                            print(tabulate(campos, alias, tablefmt="pretty"))
-                            print("\n**Opciones a realizar: ")
-                            opcion = input("\n1. Suspender servicio\n2. Volver al menú principal")
+                            print(tabulate(campos, alias, tablefmt="fancy_grid"))
+                            print("\nOpciones a realizar: ")
+                            opcion = input("\n1. Suspender servicio\n2. Volver al menú principal\n3. Ingrese una opción: ")
 
                             if opcion == "1":
                                mi_cursor.execute('UPDATE Servicio SET canceladaServicio=1 WHERE claveServicio= :claveServicio', valor)
@@ -740,18 +740,18 @@ def suspender_servicio():
                             else: 
                                 print("\nOperacion no válida, ingrese nuevamente")
                                 break
-                         else: 
+                        else: 
                             print("\n No se pudo encontrar el servicio o fue cancelado")
                     elif confirmacion == "0":
                          print("\nOperación cancelada")
+                         break
                     else: 
                         print("\nOpción no válida, ingrese nuevamente")
    except Error as e: 
       print(e)
-   except Exceptcion:
+   except Exception:
       print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
     
-
 def recuperar_servicio():
    try:
       with sqlite3.connect("TallerMecanico.db") as conn:
@@ -762,10 +762,10 @@ def recuperar_servicio():
            if suspender_servicio:
                campos = [[claveServicio, nombre] for claveServicio, nombre in suspender_servicio]
                alias = ["Clave Servicio", "Nombre Servicio"]
-               print(tabulate(campos, alias, tablefmt="pretty"))
+               print(tabulate(campos, alias, tablefmt="fancy_grid"))
 
                while True:
-                    confirmacion= input("\n¿Desea recuperar algún servicio? (Si: 1/ No: 0)")
+                    confirmacion= input("\n¿Desea recuperar algún servicio? (Si: 1/ No: 0): ")
                     if confirmacion == " ":
                         print("NO SE PUEDE OMITIR LA OPCION")
                         continue
@@ -777,24 +777,25 @@ def recuperar_servicio():
                                 continue
                              else:
                                 break
-                         mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servcio \
-                                            WHERE canceladaServicio=1 AND claveServicio= :claveServicio', {"claveServicio": clave})
-                         servicio = mi_cursor.fetchall()
+                        valor= {"claveServicio": clave}
+                        mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servicio \
+                                            WHERE canceladaServicio=1 AND claveServicio= :claveServicio', valor)
+                        servicio = mi_cursor.fetchall()
 
-                         if servicio:
+                        if servicio:
                             campos = [[claveServicio, nombre, costo] for claveServicio, nombre, costo in servicio]
                             alias = ["Clave Servicio", "Nombre Servicio", "Costo Servicio"]
-                            print(tabulate(campos, alias, tablefmt="pretty"))
+                            print(tabulate(campos, alias, tablefmt="fancy_grid"))
                             print("\n * Opciones a realizar: *")
 
                             opcion = input("\n1. Recuperar servicio\n2. Volver al menú prinipal\nIngrese una opción: ")
                             if opcion == "1":
-                               mi_cursor.execute('UPDATE Servicio SET canceladaServicio=0 WHERE claveServicio= :claveServicio, {"claveServicio": clave}')
+                               mi_cursor.execute('UPDATE Servicio SET canceladaServicio=0 WHERE claveServicio= :claveServicio', valor)
                                print("\nEl servicio se recuperó con éxito")
                                break
                             elif opcion == "2":
                                print("\nOperación cancelada")
-                          else:
+                        else:
                            print("\n * Servicio no encontrado o ya fue recuperado *")
                            continue
                     elif confirmacion == "0":
@@ -806,8 +807,6 @@ def recuperar_servicio():
     print(e)
    except Exception:
     print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-
-
 
 def busqueda_por_clave_servicio():
     while True:
