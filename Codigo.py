@@ -751,8 +751,63 @@ def suspender_servicio():
    except Exceptcion:
       print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
     
-                             
-           
+
+def recuperar_servicio():
+   try:
+      with sqlite3.connect("TallerMecanico.db") as conn:
+           mi_cursor= conn.cursor()
+           mi_cursor.execute('SELECT claveServicio, nombre FROM Servicio WHERE canceladaServicio=1')
+           suspender_servicio= mi_cursor.fetchall()
+
+           if suspender_servicio:
+               campos = [[claveServicio, nombre] for claveServicio, nombre in suspender_servicio]
+               alias = ["Clave Servicio", "Nombre Servicio"]
+               print(tabulate(campos, alias, tablefmt="pretty"))
+
+               while True:
+                    confirmacion= input("\n¿Desea recuperar algún servicio? (Si: 1/ No: 0)")
+                    if confirmacion == " ":
+                        print("NO SE PUEDE OMITIR LA OPCION")
+                        continue
+                    elif confirmacion == "1":
+                        while True:
+                             clave = input("\nIngrese la clave del servicio a recuperar: ")
+                             if clave == " ":
+                                print("NO SE PUEDE OMITIR LA OPCION")
+                                continue
+                             else:
+                                break
+                         mi_cursor.execute('SELECT claveServicio, nombre, costo FROM Servcio \
+                                            WHERE canceladaServicio=1 AND claveServicio= :claveServicio', {"claveServicio": clave})
+                         servicio = mi_cursor.fetchall()
+
+                         if servicio:
+                            campos = [[claveServicio, nombre, costo] for claveServicio, nombre, costo in servicio]
+                            alias = ["Clave Servicio", "Nombre Servicio", "Costo Servicio"]
+                            print(tabulate(campos, alias, tablefmt="pretty"))
+                            print("\n * Opciones a realizar: *")
+
+                            opcion = input("\n1. Recuperar servicio\n2. Volver al menú prinipal\nIngrese una opción: ")
+                            if opcion == "1":
+                               mi_cursor.execute('UPDATE Servicio SET canceladaServicio=0 WHERE claveServicio= :claveServicio, {"claveServicio": clave}')
+                               print("\nEl servicio se recuperó con éxito")
+                               break
+                            elif opcion == "2":
+                               print("\nOperación cancelada")
+                          else:
+                           print("\n * Servicio no encontrado o ya fue recuperado *")
+                           continue
+                    elif confirmacion == "0":
+                          print("\nOperación cancelada")
+                          break
+                    else: 
+                     print("\nOpcion no válida")
+   except Error as e:
+    print(e)
+   except Exception:
+    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
+
 
 def busqueda_por_clave_servicio():
     while True:
