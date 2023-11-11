@@ -1072,7 +1072,7 @@ while True:
     elif opcion == "3":
         while True:
             print("\n** Menu Servicios **")
-            print("\n1. Agregar un servicio\n2. Consultas y reportes\n3. Volver al menu principal")
+            print("\n1. Agregar un servicio\n2. Suspender servicio\n3. Recuperar servicio\n4. Consultas y reportes\n5. Volver al menu principal")
             opcion_servicios = input("Ingresa una opcion: ")
             if opcion_servicios == "":
                 print("\n* Opcion omitida, Ingrese una opcion *")
@@ -1082,8 +1082,18 @@ while True:
                 if validar_continuidad("¿Estas seguro de realizar un registro?"):
                     agregar_servicio()
                     continue
+                 
+            if opcion_servicios == "2":
+                if validar_continuidad("¿Estás seguro de suspender un servicio?"):
+                   suspender_servicio()
+                   continue
 
-            elif opcion_servicios == "2":
+            if opcion_servicios == "3":
+                if validar_continuidad("¿Estás seguro de recuperar un servicio?"):
+                   recuperar_servicio()
+                   continue
+
+            elif opcion_servicios == "4":
                 while True:
                     print("\nMenu consultas y reportes")
                     print("\n1. Busqueda por clave de servicio\n2. Busqueda por nombre de servicio\n3. Listado de servicios\n4. Volver al menu servicios")
@@ -1110,7 +1120,7 @@ while True:
                                 print("Opcion no valida, ingrese nuevamente.")
                     elif opcion_consultas == "4":
                         break
-            elif opcion_servicios == "3":
+            elif opcion_servicios == "5":
                 break   
             else:
                 print("\nOpcion no valida, ingrese nuevamente.")
