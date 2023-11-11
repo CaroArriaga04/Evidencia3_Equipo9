@@ -12,7 +12,7 @@ try:
                           (folio INTEGER PRIMARY KEY, fecha timestamp NOT NULL, monto REAL,cancelada INTEGER DEFAULT 0, claveCliente INTEGER NOT NULL,\
                            FOREIGN KEY(claveCliente) REFERENCES Cliente(claveCliente));")
         mi_cursor.execute("CREATE TABLE IF NOT EXISTS Servicio\
-                          (claveServicio INTEGER PRIMARY KEY, nombre TEXT NOT NULL, costo REAL);")
+                          (claveServicio INTEGER PRIMARY KEY, nombre TEXT NOT NULL, costo REAL, canceladaServicio INTEGER DEFAULT 0);")
         mi_cursor.execute("CREATE TABLE IF NOT EXISTS Detalle\
                           (claveServicio INTEGER, folio INTEGER,\
                           FOREIGN KEY(claveServicio) REFERENCES Servicio(claveServicio),\
