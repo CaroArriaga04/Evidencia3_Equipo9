@@ -658,15 +658,74 @@ def cliente_busqueda_por_nombre():
 
 def agregar_servicio():
     while True:
+      print ('______________')
+      print ("SERVICIOS DISPONIBLES")
+      print ("1. afinacion")
+      print ("2. cambio de balatas")
+      print ("3. cambio de llantas")
+      print ("4. cambio de aceite")
+      print ("5. cambio de suspension")
+      print ("6. cambio de pintura")
       nombre = input("\nNombre del servicio: ")
       if nombre == "":
-        print ("\n* INGRESE NOMBRE DE SERVICIO *")
-        continue
+         print ("\n* INGRESE NOMBRE DE SERVICIO *")
+         continue
       elif not (bool(re.search('^[a-zA-Z ]+$', nombre))):
-        print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
-        continue
+         print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
+         continue
+      elif nombre == "afinacion":
+          Continuacion = input("\n Seleccionó el servicio realizado de afinacion. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+          else:
+              print ("**nombre invalido, vuelva a ingresar**")
+              continue
+      elif nombre.lower() == "cambio de balatas":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de balatas . ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de llantas":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de llantas. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de aceites":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de aceite. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de suspension":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de suspension. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de pintura":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de pintura. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
       else:
-        break
+          break
 
     while True:
         costo = input("\nIngrese el costo del servicio: ")
@@ -954,7 +1013,41 @@ def servicios_por_nombre():
  except Exception:
    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
+def Estadisticos_servicios():
+    n_servicios = input ("Ingresa cuantos servicos mas prestados deseas identificar: ")
+    fecha_inicio_s = input ("Ingresa la fecha inicial del periodo (dd/mm/aaaa): ")
+    fecha_final_s = input ("Ingresa la fecha final del periodo (dd/mm/aaaa): ")
 
+    fecha_inicial = datetime.strptime(fecha_inicial_str, "%d/%m/%Y")
+    fecha_final = datetime.strptime(fecha_final_str, "%d/%m/%Y")
+    try:
+        with sqlite3.connect ("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            servicios_disponibles = [ 
+                "afinacion",
+                "cambio de balatas",
+                "cambio de llantas",
+                "cambio de aceite",
+                "cambio de suspension",
+                "cambio de pintura"
+            ]
+            for servicio in servicios_disponibles:
+                mi_cursor.execute(
+                    "SELECT COUNT(*) AS NumSolicitudes "
+                    "FROM ServiciosSolicitados "
+                    "JOIN Servicio ON ServiciosSolicitados.claveServicio = Servicio.claveServicio "
+                    "JOIN Nota ON ServiciosSolicitados.claveServicio = Nota.claveServicio "
+                    "WHERE Servicio.nombre = ? AND Nota.fecha BETWEEN ? AND ?",
+                    (servicio, fecha_inicial, fecha_final)
+                )
+                num_solicitudes = mi_cursor.fetchone()[0]
+                resultados.append((servicio, num_solicitudes))
+            print(tabulate(resultados, headers=["Nombre Servicio", "Num. Solicitudes"], tablefmt="fancy_grid"))
+
+    except Error as e:
+        print (e)
+    except Exception: 
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
 while True:
@@ -1124,6 +1217,19 @@ while True:
             else:
                 print("\nOpcion no valida, ingrese nuevamente.")
     elif opcion == "4":
+        while True:
+            print ("***MENU ESTADISTICOS***")
+            print ("\n1. servicios mas prestados\n2. clientes con mas notas\n3. promedio de montos de las notas\4. regresar al menu principal")
+            opcion_estadisticos= input ("ingresa una opcion: ")
+            if opcion_estadisticos == "1":
+                Estadisticos_servicios()
+            elif opcion_estadisticos == "2":
+                pass
+            elif opcion_estadisticos == "3":
+                break
+            else:
+                print ("\nOpcion no valida, ingresar de nuevo.")
+    elif opcion == "5":
         print("\nGracias por usar este programa. 😁")
         break
     else:
