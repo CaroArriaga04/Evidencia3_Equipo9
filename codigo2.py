@@ -1034,10 +1034,123 @@ def servicios_mas_solicitados():
         print(e)
 
 def clientes_con_mas_notas():
-    pass
+    while True:
+        num_clientes = input("\nCantidad de clientes más prestados a identificar: ")
+        if num_clientes == "":
+            print("\n* Ingrese una cantidad, no puede quedar vacío. *")
+            continue
+        elif not bool(re.search('^[0-9]+$', num_clientes)):
+            print("\n* Clave no válida, ingrese nuevamente. *")
+            continue
+        elif num_clientes == "0":
+            print ("El minimo de clientes a mostrar debe ser de 1 (uno).")
+            continue
+        else:
+            num_clientes = int(num_clientes)
+            break
+
+    fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
+    fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
+
+    try:
+        fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+        fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+        if fecha_final < fecha_inicial:
+            print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
+            return
+    except Exception:
+        print("\n* Fecha no ingresada o inválida, ingrese nuevamente *")
+        return
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            mi_cursor.execute(
+                "SELECT Cliente.nombre AS NombreCliente, COUNT(Nota.folio) AS CantidadNotas "
+                "FROM Nota "
+                "JOIN Cliente ON Nota.claveCliente = CLiente.claveCliente "
+                "WHERE Nota.fecha BETWEEN ? AND ? "
+                "GROUP BY Nota.claveCliente "
+                "ORDER BY CantidadNotas DESC "
+                "LIMIT ?;",
+                (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"), num_clientes),
+            )
+
+            resultados = mi_cursor.fetchall()
+
+            if not resultados:
+                print("\n* No hay resultados para el período seleccionado *")
+                return
+
+            informacion = [[nombre_cliente, cantidad] for nombre_cliente, cantidad in resultados]
+            titulos = ["Nombre del Cliente", "Cantidad de Notas"]
+
+            print("\nReporte de Clientes con mas notas:")
+            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                opcion = input("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Ingrese una opción: ")
+
+                if opcion == "1":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%y_%m_%Y")
+                    archivo_csv = f"ReporteClientesConMasNotas_{fecha_inicial_str}_{fecha_final_str}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%d_%m_%Y")
+                    archivo_excel = f"ReporteClientesConMasNotas_{fecha_inicial_str}_{fecha_final_str}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+    except sqlite3.Error as e:
+        print(e)
+    except Exception:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 def promedio_montos_notas():
-    pass
+    while True:
+        fecha_inicial= input("define la fecha inicial de tu reporte(dd/mm/YYYY): ")
+        fecha_final= input ("define la fecha fin para tu reporte(dd/mm/YYYY): ")
+
+        try:
+            fecha_inicial= datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime (fecha_inicial, "%d/%m/%Y").date()
+            if fecha_final<fecha_inicial:
+                print ("\n**la fecha final no puede ser inferior a la fecha inicial del reporte, intenta de nuevo**")
+                return
+        except Exception:
+            print ("\n*la fecha no se ha ingresado o es invalida, ingresar nuevamente.* ")
+        try:
+            with sqlite3.connect ("TallerMecanico.db") as conn:
+                mi_cursor = conn.cursor()
+                mi_cursor.execute (
+                    "SELECT COUNT(folio), SUM(monto) FROM Nota WHERE fecha BETWEEN ? AND ?",
+                    (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"))
+                )
+                resultados = mi_cursor.fetchone()
+                if resultados[0] == 0:
+                    print("\n* No hay notas para el período seleccionado *")
+                    return
+                
+                cantidad_notas = resultados[0]
+                total_montos = resultados[1]
+
+                promedio = total_montos / cantidad_notas
+                print("\nReporte de Montos en el Período:")
+                print(f"Total de Notas en el periodo: {cantidad_notas}")
+                print(f"Total de Montos en el periodo: {total_montos}")
+                print(f"Promedio de los Montos: {promedio}")
+        except Error as e:
+            print (e)
+        except Exception:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        
 
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
