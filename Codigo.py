@@ -1013,7 +1013,41 @@ def servicios_por_nombre():
  except Exception:
    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
+def Estadisticos_servicios():
+    n_servicios = input ("Ingresa cuantos servicos mas prestados deseas identificar: ")
+    fecha_inicio_s = input ("Ingresa la fecha inicial del periodo (dd/mm/aaaa): ")
+    fecha_final_s = input ("Ingresa la fecha final del periodo (dd/mm/aaaa): ")
 
+    fecha_inicial = datetime.strptime(fecha_inicial_str, "%d/%m/%Y")
+    fecha_final = datetime.strptime(fecha_final_str, "%d/%m/%Y")
+    try:
+        with sqlite3.connect ("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            servicios_disponibles = [ 
+                "afinacion",
+                "cambio de balatas",
+                "cambio de llantas",
+                "cambio de aceite",
+                "cambio de suspension",
+                "cambio de pintura"
+            ]
+            for servicio in servicios_disponibles:
+                mi_cursor.execute(
+                    "SELECT COUNT(*) AS NumSolicitudes "
+                    "FROM ServiciosSolicitados "
+                    "JOIN Servicio ON ServiciosSolicitados.claveServicio = Servicio.claveServicio "
+                    "JOIN Nota ON ServiciosSolicitados.claveServicio = Nota.claveServicio "
+                    "WHERE Servicio.nombre = ? AND Nota.fecha BETWEEN ? AND ?",
+                    (servicio, fecha_inicial, fecha_final)
+                )
+                num_solicitudes = mi_cursor.fetchone()[0]
+                resultados.append((servicio, num_solicitudes))
+            print(tabulate(resultados, headers=["Nombre Servicio", "Num. Solicitudes"], tablefmt="fancy_grid"))
+
+    except Error as e:
+        print (e)
+    except Exception: 
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
 while True:
@@ -1183,6 +1217,19 @@ while True:
             else:
                 print("\nOpcion no valida, ingrese nuevamente.")
     elif opcion == "4":
+        while True:
+            print ("***MENU ESTADISTICOS***")
+            print ("\n1. servicios mas prestados\n2. clientes con mas notas\n3. promedio de montos de las notas\4. regresar al menu principal")
+            opcion_estadisticos= input ("ingresa una opcion: ")
+            if opcion_estadisticos == "1":
+                Estadisticos_servicios()
+            elif opcion_estadisticos == "2":
+                pass
+            elif opcion_estadisticos == "3":
+                break
+            else:
+                print ("\nOpcion no valida, ingresar de nuevo.")
+    elif opcion == "5":
         print("\nGracias por usar este programa. 😁")
         break
     else:
