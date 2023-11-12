@@ -837,7 +837,7 @@ def busqueda_por_clave_servicio():
                 Columnas = ["Clave", "Nombre", "Costo"]
                 print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
             else:
-                print(f"\nNo se encontró un cliente asociado con el nombre ingresado {v_clave}")
+                print(f"\nNo se encontró un servicio asociado con la clave ingresada: {v_clave}")
     except Error as e:
         print (e)
     except Exception:
@@ -860,7 +860,7 @@ def busqueda_por_nombre_servicio():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             valores = {"nombre":v_nombre}
-            mi_cursor.execute("SELECT * FROM Servicio WHERE nombre = :nombre", valores)
+            mi_cursor.execute("SELECT claveServicio, nombre, costo FROM Servicio WHERE nombre = :nombre AND canceladaServicio=0", valores)
             registro = mi_cursor.fetchall()
 
             if registro:
@@ -868,7 +868,7 @@ def busqueda_por_nombre_servicio():
                 Columnas = ["Clave", "Nombre", "Costo"]
                 print(tabulate(datos, Columnas, tablefmt="fancy_grid"))
             else:
-                print(f"\nNo se encontró un servicio asociado con el nombre ingresado {v_nombre}")
+                print(f"\nNo se encontró un servicio asociado con el nombre ingresado:  {v_nombre}")
     except Error as e:
         print (e)
     except Exception:
@@ -878,7 +878,7 @@ def servicios_por_clave():
    try:
     with sqlite3.connect("TallerMecanico.db") as conn:
       mi_cursor = conn.cursor()
-      mi_cursor.execute("SELECT * FROM Servicio ORDER BY claveServicio")
+      mi_cursor.execute("SELECT claveServicio, nombre, costo FROM Servicio WHERE canceladaServicio=0 ORDER BY claveServicio")
       registro = mi_cursor.fetchall()
 
       if registro:
@@ -921,7 +921,7 @@ def servicios_por_nombre():
  try:
       with sqlite3.connect("TallerMecanico.db") as conn:
         mi_cursor = conn.cursor()
-        mi_cursor.execute("SELECT * FROM Servicio ORDER BY nombre")
+        mi_cursor.execute("SELECT claveServicio, nombre, costo FROM Servicio WHERE canceladaServicio=0 ORDER BY nombre")
         registro = mi_cursor.fetchall()
 
         if registro:
