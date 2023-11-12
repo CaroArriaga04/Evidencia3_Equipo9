@@ -17,12 +17,6 @@ try:
                           (claveServicio INTEGER, folio INTEGER,\
                           FOREIGN KEY(claveServicio) REFERENCES Servicio(claveServicio),\
                           FOREIGN KEY(folio) REFERENCES Nota(folio));")
-        mi_cursor.execute("CREATE TABLE IF NOT EXISTS ServiciosSolicitados\
-                          (PuestoServicio INTEGER PRIMARY KEY, claveServicio INTEGER, nombre, NumSolicitudes INTEGER,\
-                          FOREIGN KEY (claveServicio) REFERENCES Servicio (claveServicio));")
-        mi_cursor.execute("CREATE TABLE IF NOT EXISTS NotasPorCliente\
-                          (PuestoCliente INTEGER PRIMARY KEY, claveCliente INTEGER, NumNotas INTEGER,\
-                          FOREIGN KEY (claveCliente) REFERENCES Cliente (claveCliente));")
 except Error as e:
     print (e)
 except Exception:

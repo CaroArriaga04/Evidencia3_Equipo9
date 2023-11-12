@@ -1,4 +1,5 @@
 import datetime
+import pandas as pd
 import re
 from tabulate import tabulate
 import pandas as pd
@@ -515,7 +516,8 @@ def clientes_ordenados_por_claves():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            mi_cursor.execute("SELECT * FROM Cliente ORDER BY claveCliente")
+            mi_cursor.execute("SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
+                              WHERE canceladaCliente = 0 ORDER BY claveCliente")
             registro = mi_cursor.fetchall()
 
             if registro:
@@ -557,7 +559,8 @@ def clientes_ordenados_por_nombres():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            mi_cursor.execute("SELECT * FROM Cliente ORDER BY nombre")
+            mi_cursor.execute("SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
+                              WHERE canceladaCliente = 0 ORDER BY nombreCliente")
             registro = mi_cursor.fetchall()
 
             if registro:
@@ -611,11 +614,12 @@ def cliente_busqueda_por_clave():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             valores = {"claveCliente":valor_clave}
-            mi_cursor.execute("SELECT * FROM Cliente WHERE claveCliente = :claveCliente", valores)
+            mi_cursor.execute("SELECT claveCliente, nombreCliente, rfc, correo \
+                               FROM Cliente WHERE claveCliente = :claveCliente AND canceladaCliente=0", valores)
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                informacion = [[claveCliente, nombreCliente, rfc, correo] for claveCliente, nombreCliente, rfc, correo in registro]
                 titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
@@ -641,12 +645,13 @@ def cliente_busqueda_por_nombre():
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            valores = {"nombre":valor_nombre}
-            mi_cursor.execute("SELECT * FROM Cliente WHERE nombre = :nombre", valores)
+            valores = {"nombreCliente":valor_nombre}
+            mi_cursor.execute("SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
+                              WHERE nombreCliente = :nombreCliente AND canceladaCliente=0", valores)
             registro = mi_cursor.fetchall()
 
             if registro:
-                informacion = [[clave, nombreCliente, rfc, correo] for clave, nombreCliente, rfc, correo in registro]
+                informacion = [[claveCliente, nombreCliente, rfc, correo] for claveCliente, nombreCliente, rfc, correo in registro]
                 titulos = ["Clave", "Nombre Cliente", "RFC", "Correo"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
             else:
@@ -658,74 +663,15 @@ def cliente_busqueda_por_nombre():
 
 def agregar_servicio():
     while True:
-      print ('______________')
-      print ("SERVICIOS DISPONIBLES")
-      print ("1. afinacion")
-      print ("2. cambio de balatas")
-      print ("3. cambio de llantas")
-      print ("4. cambio de aceite")
-      print ("5. cambio de suspension")
-      print ("6. cambio de pintura")
       nombre = input("\nNombre del servicio: ")
       if nombre == "":
-         print ("\n* INGRESE NOMBRE DE SERVICIO *")
-         continue
+        print ("\n* INGRESE NOMBRE DE SERVICIO *")
+        continue
       elif not (bool(re.search('^[a-zA-Z ]+$', nombre))):
-         print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
-         continue
-      elif nombre == "afinacion":
-          Continuacion = input("\n Seleccionó el servicio realizado de afinacion. ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
-          else:
-              print ("**nombre invalido, vuelva a ingresar**")
-              continue
-      elif nombre.lower() == "cambio de balatas":
-          Continuacion = input("\n Seleccionó el servicio realizado de cambio de balatas . ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
-      elif nombre.lower() == "cambio de llantas":
-          Continuacion = input("\n Seleccionó el servicio realizado de cambio de llantas. ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
-      elif nombre.lower() == "cambio de aceites":
-          Continuacion = input("\n Seleccionó el servicio realizado de cambio de aceite. ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
-      elif nombre.lower() == "cambio de suspension":
-          Continuacion = input("\n Seleccionó el servicio realizado de cambio de suspension. ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
-      elif nombre.lower() == "cambio de pintura":
-          Continuacion = input("\n Seleccionó el servicio realizado de cambio de pintura. ¿Está seguro de registrar el siguiente \
-                                servicio en la nota? Si/No")
-          if Continuacion.upper() == "SI":
-              pass
-          elif Continuacion.upper() == "NO":
-              print ("**Se te regresará al menu de agregado de servicio.**")
-              continue
+        print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
+        continue
       else:
-          break
+        break
 
     while True:
         costo = input("\nIngrese el costo del servicio: ")
@@ -883,7 +829,7 @@ def busqueda_por_clave_servicio():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             valores = {"claveServicio":v_clave}
-            mi_cursor.execute("SELECT * FROM Servicio WHERE claveServicio = :claveServicio", valores)
+            mi_cursor.execute("SELECT claveServicio, nombre, costo FROM Servicio WHERE claveServicio = :claveServicio AND canceladaServicio = 0", valores)
             registro = mi_cursor.fetchall()
 
             if registro:
@@ -1013,46 +959,208 @@ def servicios_por_nombre():
  except Exception:
    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
 
-def Estadisticos_servicios():
-    n_servicios = input ("Ingresa cuantos servicos mas prestados deseas identificar: ")
-    fecha_inicio_s = input ("Ingresa la fecha inicial del periodo (dd/mm/aaaa): ")
-    fecha_final_s = input ("Ingresa la fecha final del periodo (dd/mm/aaaa): ")
+def servicios_mas_solicitados():
+    while True:
+        num_servicios = input("\nCantidad de servicios más prestados a identificar: ")
+        if num_servicios == "":
+            print("\n* Ingrese una cantidad, no puede quedar vacío. *")
+            continue
+        elif not bool(re.search('^[0-9]+$', num_servicios)):
+            print("\n* Clave no válida, ingrese nuevamente. *")
+            continue
+        else:
+            num_servicios = int(num_servicios)
+            break
 
-    fecha_inicial = datetime.strptime(fecha_inicial_str, "%d/%m/%Y")
-    fecha_final = datetime.strptime(fecha_final_str, "%d/%m/%Y")
+    fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
+    fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
+
     try:
-        with sqlite3.connect ("TallerMecanico.db") as conn:
+        fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+        fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+        if fecha_final < fecha_inicial:
+            print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
+            return
+    except Exception:
+        print("\n* Fecha no ingresada o inválida, ingrese nuevamente *")
+        return
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
-            servicios_disponibles = [ 
-                "afinacion",
-                "cambio de balatas",
-                "cambio de llantas",
-                "cambio de aceite",
-                "cambio de suspension",
-                "cambio de pintura"
-            ]
-            for servicio in servicios_disponibles:
-                mi_cursor.execute(
-                    "SELECT COUNT(*) AS NumSolicitudes "
-                    "FROM ServiciosSolicitados "
-                    "JOIN Servicio ON ServiciosSolicitados.claveServicio = Servicio.claveServicio "
-                    "JOIN Nota ON ServiciosSolicitados.claveServicio = Nota.claveServicio "
-                    "WHERE Servicio.nombre = ? AND Nota.fecha BETWEEN ? AND ?",
-                    (servicio, fecha_inicial, fecha_final)
-                )
-                num_solicitudes = mi_cursor.fetchone()[0]
-                resultados.append((servicio, num_solicitudes))
-            print(tabulate(resultados, headers=["Nombre Servicio", "Num. Solicitudes"], tablefmt="fancy_grid"))
+            mi_cursor.execute(
+                "SELECT Servicio.nombre AS NombreServicio, COUNT(Detalle.claveServicio) AS CantidadServicios "
+                "FROM Detalle "
+                "JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio "
+                "JOIN Nota ON Detalle.folio = Nota.folio "
+                "WHERE Nota.fecha BETWEEN ? AND ? "
+                "GROUP BY Detalle.claveServicio "
+                "ORDER BY CantidadServicios DESC "
+                "LIMIT ?;",
+                (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"), num_servicios),
+            )
 
-    except Error as e:
-        print (e)
-    except Exception: 
+            resultados = mi_cursor.fetchall()
+
+            if not resultados:
+                print("\n* No hay resultados para el período seleccionado *")
+                return
+
+            informacion = [[nombre_servicio, cantidad] for nombre_servicio, cantidad in resultados]
+            titulos = ["Nombre del Servicio", "Cantidad de Servicios Prestados"]
+
+            print("\nReporte de Servicios Más Prestados:")
+            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                opcion = input("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Ingrese una opción: ")
+
+                if opcion == "1":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%y_%m_%Y")
+                    archivo_csv = f"ReporteServiciosMasPrestados_{fecha_inicial_str}_{fecha_final_str}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%d_%m_%Y")
+                    archivo_excel = f"ReporteServiciosMasPrestados_{fecha_inicial_str}_{fecha_final_str}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+    except sqlite3.Error as e:
+        print(e)
+    except Exception as e:
+        print(e)
+
+def clientes_con_mas_notas():
+    while True:
+        num_clientes = input("\nCantidad de clientes más prestados a identificar: ")
+        if num_clientes == "":
+            print("\n* Ingrese una cantidad, no puede quedar vacío. *")
+            continue
+        elif not bool(re.search('^[0-9]+$', num_clientes)):
+            print("\n* Clave no válida, ingrese nuevamente. *")
+            continue
+        elif num_clientes == "0":
+            print ("El minimo de clientes a mostrar debe ser de 1 (uno).")
+            continue
+        else:
+            num_clientes = int(num_clientes)
+            break
+
+    fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
+    fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
+
+    try:
+        fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+        fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+        if fecha_final < fecha_inicial:
+            print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
+            return
+    except Exception:
+        print("\n* Fecha no ingresada o inválida, ingrese nuevamente *")
+        return
+    try:
+        with sqlite3.connect("TallerMecanico.db") as conn:
+            mi_cursor = conn.cursor()
+            mi_cursor.execute(
+                "SELECT Cliente.nombre AS NombreCliente, COUNT(Nota.folio) AS CantidadNotas "
+                "FROM Nota "
+                "JOIN Cliente ON Nota.claveCliente = CLiente.claveCliente "
+                "WHERE Nota.fecha BETWEEN ? AND ? "
+                "GROUP BY Nota.claveCliente "
+                "ORDER BY CantidadNotas DESC "
+                "LIMIT ?;",
+                (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"), num_clientes),
+            )
+
+            resultados = mi_cursor.fetchall()
+
+            if not resultados:
+                print("\n* No hay resultados para el período seleccionado *")
+                return
+
+            informacion = [[nombre_cliente, cantidad] for nombre_cliente, cantidad in resultados]
+            titulos = ["Nombre del Cliente", "Cantidad de Notas"]
+
+            print("\nReporte de Clientes con mas notas:")
+            print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
+
+            df = pd.DataFrame(informacion, columns=titulos)
+            while True:
+                print("\nOpciones a realizar con su reporte")
+                opcion = input("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Ingrese una opción: ")
+
+                if opcion == "1":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%y_%m_%Y")
+                    archivo_csv = f"ReporteClientesConMasNotas_{fecha_inicial_str}_{fecha_final_str}.csv"
+                    df.to_csv(archivo_csv, index=False)
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
+                    print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
+                    break
+                elif opcion == "2":
+                    fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%d_%m_%Y")
+                    archivo_excel = f"ReporteClientesConMasNotas_{fecha_inicial_str}_{fecha_final_str}.xlsx"
+                    df.to_excel(archivo_excel, index=False, engine='openpyxl')
+                    print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
+                    print(f"\nEl archivo '{archivo_excel}' se ha guardado en la ubicación: {os.path.abspath(archivo_excel)}")
+                    break
+    except sqlite3.Error as e:
+        print(e)
+    except Exception:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+
+def promedio_montos_notas():
+    while True:
+        fecha_inicial= input("define la fecha inicial de tu reporte(dd/mm/YYYY): ")
+        fecha_final= input ("define la fecha fin para tu reporte(dd/mm/YYYY): ")
+
+        try:
+            fecha_inicial= datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime (fecha_inicial, "%d/%m/%Y").date()
+            if fecha_final<fecha_inicial:
+                print ("\n**la fecha final no puede ser inferior a la fecha inicial del reporte, intenta de nuevo**")
+                return
+        except Exception:
+            print ("\n*la fecha no se ha ingresado o es invalida, ingresar nuevamente.* ")
+        try:
+            with sqlite3.connect ("TallerMecanico.db") as conn:
+                mi_cursor = conn.cursor()
+                mi_cursor.execute (
+                    "SELECT COUNT(folio), SUM(monto) FROM Nota WHERE fecha BETWEEN ? AND ?",
+                    (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"))
+                )
+                resultados = mi_cursor.fetchone()
+                if resultados[0] == 0:
+                    print("\n* No hay notas para el período seleccionado *")
+                    return
+                
+                cantidad_notas = resultados[0]
+                total_montos = resultados[1]
+
+                promedio = total_montos / cantidad_notas
+                print("\nReporte de Montos en el Período:")
+                print(f"Total de Notas en el periodo: {cantidad_notas}")
+                print(f"Total de Montos en el periodo: {total_montos}")
+                print(f"Promedio de los Montos: {promedio}")
+        except Error as e:
+            print (e)
+        except Exception:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        
+
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
 while True:
     print("\n** MENU PRINCIPAL **")
-    print("\n1. Menu Notas\n2. Menu Clientes\n3. Menu Servicios\n4. Salir")
+    print("\n1. Menu Notas\n2. Menu Clientes\n3. Menu Servicios\n4. Estadisticos\n5. Salir")
     opcion = input("Ingresa una opcion: ")
     if opcion == "1":
         while True:
@@ -1218,17 +1326,29 @@ while True:
                 print("\nOpcion no valida, ingrese nuevamente.")
     elif opcion == "4":
         while True:
-            print ("***MENU ESTADISTICOS***")
-            print ("\n1. servicios mas prestados\n2. clientes con mas notas\n3. promedio de montos de las notas\4. regresar al menu principal")
-            opcion_estadisticos= input ("ingresa una opcion: ")
-            if opcion_estadisticos == "1":
-                Estadisticos_servicios()
+            print("\n** Menu Estadisticos **")
+            print("\n1. Servicios mas prestados\n2. Clientes con mas notas\n3. Promedio de montos de notas\n4. Volver al menu anterior")
+            opcion_estadisticos = input("Ingresa una opcion: ")
+            if opcion_estadisticos == "":
+                print("\n* Opcion omitida, Ingrese una opcion *")
+                continue
+            elif opcion_estadisticos == "1":
+                if validar_continuidad("¿Estas seguro de realizar un listado de servicios mas prestados?"):
+                    servicios_mas_solicitados()
+                    continue
             elif opcion_estadisticos == "2":
-                pass
+                if validar_continuidad("¿Estas seguro de realizar un listado de clientes con mas notas?"):
+                    clientes_con_mas_notas()
+                    continue
             elif opcion_estadisticos == "3":
+                if validar_continuidad("¿Estas seguro de realizar un promedio de montos de notas?"):
+                    promedio_montos_notas()
+                    continue
+            elif opcion == "4":
                 break
             else:
-                print ("\nOpcion no valida, ingresar de nuevo.")
+                print("Opcion no valida, ingrese nuevamente.")
+                    
     elif opcion == "5":
         print("\nGracias por usar este programa. 😁")
         break
