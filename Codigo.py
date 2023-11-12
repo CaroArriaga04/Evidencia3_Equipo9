@@ -658,15 +658,74 @@ def cliente_busqueda_por_nombre():
 
 def agregar_servicio():
     while True:
+      print ('______________')
+      print ("SERVICIOS DISPONIBLES")
+      print ("1. afinacion")
+      print ("2. cambio de balatas")
+      print ("3. cambio de llantas")
+      print ("4. cambio de aceite")
+      print ("5. cambio de suspension")
+      print ("6. cambio de pintura")
       nombre = input("\nNombre del servicio: ")
       if nombre == "":
-        print ("\n* INGRESE NOMBRE DE SERVICIO *")
-        continue
+         print ("\n* INGRESE NOMBRE DE SERVICIO *")
+         continue
       elif not (bool(re.search('^[a-zA-Z ]+$', nombre))):
-        print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
-        continue
+         print ("\n* NOMBRE NO VALIDO, INGRESE NUEVAMENTE *")
+         continue
+      elif nombre == "afinacion":
+          Continuacion = input("\n Seleccionó el servicio realizado de afinacion. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+          else:
+              print ("**nombre invalido, vuelva a ingresar**")
+              continue
+      elif nombre.lower() == "cambio de balatas":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de balatas . ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de llantas":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de llantas. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de aceites":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de aceite. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de suspension":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de suspension. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
+      elif nombre.lower() == "cambio de pintura":
+          Continuacion = input("\n Seleccionó el servicio realizado de cambio de pintura. ¿Está seguro de registrar el siguiente \
+                                servicio en la nota? Si/No")
+          if Continuacion.upper() == "SI":
+              pass
+          elif Continuacion.upper() == "NO":
+              print ("**Se te regresará al menu de agregado de servicio.**")
+              continue
       else:
-        break
+          break
 
     while True:
         costo = input("\nIngrese el costo del servicio: ")
