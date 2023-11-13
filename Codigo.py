@@ -582,14 +582,14 @@ def clientes_ordenados_por_nombres():
                 print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
                 opcion = input("Ingrese una opción: ")
                 if opcion == "1":
-                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
                     archivo_csv = f"ReporteClientesActivosPorNombre_{fecha_actual}.csv"
                     df.to_csv(archivo_csv, index=False)
                     print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
                     print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
                     break
                 elif opcion == "2":
-                    fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+                    fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
                     archivo_excel = f"ReporteClientesActivosPorNombre_{fecha_actual}.xlsx"
                     df.to_excel(archivo_excel, index=False, engine='openpyxl')
                     print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
@@ -901,14 +901,14 @@ def servicios_por_clave():
         print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
         opcion = input("Ingrese una opción: ")
         if opcion == "1":
-          fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+          fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
           archivo_csv = f"ReporteServiciosActivosPorClave_{fecha_actual}.csv"
           df.to_csv(archivo_csv, index=False)
           print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
           print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
           break
         elif opcion == "2":
-          fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+          fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
           archivo_excel = f"ReporteServiciosPorClave_{fecha_actual}.xlsx"
           df.to_excel(archivo_excel, index=False, engine='openpyxl')
           print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
@@ -943,14 +943,14 @@ def servicios_por_nombre():
           print("\n1. Exportar a CSV\n2. Exportar a Excel\n3. Regresar al menú de reportes")
           opcion = input("Ingrese una opción: ")
           if opcion == "1":
-            fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+            fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
             archivo_csv = f"ReporteServiciosPorNombre_{fecha_actual}.csv"
             df.to_csv(archivo_csv, index=False)
             print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
             print(f"\nEl archivo '{archivo_csv}' se ha guardado en la ubicación: {os.path.abspath(archivo_csv)}")
             break
           elif opcion == "2":
-            fecha_actual = datetime.datetime.now().strftime('%m_%d_%Y')
+            fecha_actual = datetime.datetime.now().strftime('%d_%m_%Y')
             archivo_excel = f"ReporteServiciosActivosPorNombre_{fecha_actual}.xlsx"
             df.to_excel(archivo_excel, index=False, engine='openpyxl')
             print(f"\n* El reporte se ha guardado con el nombre: '{archivo_excel}' *")
@@ -1009,6 +1009,7 @@ def servicios_mas_solicitados():
                 "JOIN Servicio ON Detalle.claveServicio = Servicio.claveServicio "
                 "JOIN Nota ON Detalle.folio = Nota.folio "
                 "WHERE Nota.fecha BETWEEN ? AND ? "
+                "AND Nota.cancelada = 0 "
                 "GROUP BY Detalle.claveServicio "
                 "ORDER BY CantidadServicios DESC "
                 "LIMIT ?;",
@@ -1034,7 +1035,7 @@ def servicios_mas_solicitados():
 
                 if opcion == "1":
                     fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
-                    fecha_final_str = fecha_final.strftime("%y_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%d_%m_%Y")
                     archivo_csv = f"ReporteServiciosMasPrestados_{fecha_inicial_str}_{fecha_final_str}.csv"
                     df.to_csv(archivo_csv, index=False)
                     print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
@@ -1096,6 +1097,7 @@ def clientes_con_mas_notas():
                 "FROM Nota "
                 "JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente "
                 "WHERE Nota.fecha BETWEEN ? AND ? "
+                "AND Nota.cancelada = 0 "
                 "GROUP BY Nota.claveCliente "
                 "ORDER BY CantidadNotas DESC "
                 "LIMIT ?;",
@@ -1163,7 +1165,7 @@ def promedio_montos_notas():
             with sqlite3.connect ("TallerMecanico.db") as conn:
                 mi_cursor = conn.cursor()
                 mi_cursor.execute (
-                    "SELECT COUNT(folio), SUM(monto) FROM Nota WHERE fecha BETWEEN ? AND ?",
+                    "SELECT COUNT(folio), SUM(monto) FROM Nota WHERE fecha BETWEEN ? AND ? AND cancelada = 0",
                     (fecha_inicial.strftime("%Y/%m/%d"), fecha_final.strftime("%Y/%m/%d"))
                 )
                 resultados = mi_cursor.fetchone()
