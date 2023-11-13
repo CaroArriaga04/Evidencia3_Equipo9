@@ -1124,7 +1124,7 @@ def promedio_montos_notas():
 
         try:
             fecha_inicial= datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
-            fecha_final = datetime.datetime.strptime (fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime (fecha_final, "%d/%m/%Y").date()
             if fecha_final<fecha_inicial:
                 print ("\n**la fecha final no puede ser inferior a la fecha inicial del reporte, intenta de nuevo**")
                 return
