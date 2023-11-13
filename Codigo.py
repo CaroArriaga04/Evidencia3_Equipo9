@@ -94,8 +94,12 @@ def registrar_nota():
                         if servicio:
                             detalles.append(clave_serv) 
                             continuar = input("\n¿Desea agregar otro servicio? (si/no): ")
-                            if continuar.lower() != "si":
+                            if continuar.lower() == "no":
                                 break
+                            elif continuar.lower() == "si":
+                                continue
+                            else:
+                                print("\nOpcion no valida, intente nuevamente.")
                         else:
                             print("\n* El servicio no existe, ingrese nuevamente *")
                             continue
@@ -402,27 +406,24 @@ def suspender_cliente():
             mi_cursor= conn.cursor()
             mi_cursor.execute('SELECT claveCliente, nombreCliente FROM Cliente \
                                 WHERE canceladaCliente=0')
-
             suspender_cliente= mi_cursor.fetchall()
             if suspender_cliente:
                 informacion = [[claveCliente, nombreCliente] 
                                 for claveCliente, nombreCliente in suspender_cliente]
                 titulos= ["Clave cliente", "Nombre Cliente"]
                 print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-
                 while True:
                     confirmar = input("\n¿Está seguro de que desea suspender algun cliente? (1.Si/0.No): ")
                     if confirmar == "1":
                         while True:
                             clave = input("\nClave del cliente a suspender: ")
-                            if clave == "" or clave.isspace():
+                            if clave == "":
                                 print ("\n* Ingrese una clave para la suspensión del cliente. *")
                             elif not (bool(re.search('^[0-9]+$', clave))):
                                 print ("\n* Clave no valida, ingrese nuevmente *")
                             else:
                                 break
                         mi_cursor= conn.cursor()
-
                         valor = {"claveCliente":clave}
                         mi_cursor.execute('SELECT claveCliente, nombreCliente, rfc, correo FROM Cliente \
                                             WHERE canceladaCliente=0 AND claveCliente = :claveCliente', valor)
@@ -432,15 +433,19 @@ def suspender_cliente():
                                             for claveCliente, nombreCliente, rfc, correo in cliente]
                             titulos= ["Clave cliente", "Nombre Cliente", "RFC", "Correo"]
                             print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-                            print("\nOpciones a realizar")
-                            opcion = input("\n1. Suspender cliente\n2. Volver al menu anterior\nIngrese una opción: ")
-                            if opcion == "1":
-                                mi_cursor.execute('UPDATE Cliente SET canceladaCliente=1 WHERE claveCliente = :claveCliente', (valor))
-                                print("\nCliente suspendido con éxito")
-                                break
-                            elif opcion == "2":
-                                print("\nOperacion cancelada")
-                                break
+                            while True:
+                                print("\nOpciones a realizar")
+                                opcion = input("\n1. Suspender cliente\n2. Volver al menu anterior\nIngrese una opción: ")
+                                if opcion == "1":
+                                    mi_cursor.execute('UPDATE Cliente SET canceladaCliente=1 WHERE claveCliente = :claveCliente', (valor))
+                                    print("\nCliente suspendido con éxito")
+                                    return False
+                                elif opcion == "2":
+                                    print("\nOperacion cancelada")
+                                    return False
+                                else:
+                                    print("\nOpción no válida, ingrese nuevamente.")
+                                    continue
                         else:
                             print("\n* Cliente no encontrado o ya suspendido *")
                             continue
@@ -449,6 +454,7 @@ def suspender_cliente():
                         break
                     else:
                         print("\nOpción no válida, ingrese nuevamente.")
+                        continue
     except Error as e:
         print (e)
     except Exception:
@@ -490,15 +496,16 @@ def recuperar_cliente():
                                             for claveCliente, nombreCliente, rfc, correo in cliente]
                             titulos= ["Clave cliente", "Nombre Cliente", "RFC", "Correo"]
                             print(tabulate(informacion, titulos, tablefmt="fancy_grid"))
-                            print("\nOpciones a realizar")
-                            opcion = input("\n1. Recuperar cliente\n2. Volver al menu anterior\nIngrese una opción: ")
-                            if opcion == "1":
-                                mi_cursor.execute('UPDATE Cliente SET canceladaCliente=0 WHERE claveCliente = :claveCliente', (valor))
-                                print("\nCliente recuperado con éxito")
-                                break
-                            elif opcion == "2":
-                                print("\nOperacion cancelada")
-                                break
+                            while True:
+                                print("\nOpciones a realizar")
+                                opcion = input("\n1. Recuperar cliente\n2. Volver al menu anterior\nIngrese una opción: ")
+                                if opcion == "1":
+                                    mi_cursor.execute('UPDATE Cliente SET canceladaCliente=0 WHERE claveCliente = :claveCliente', (valor))
+                                    print("\nCliente recuperado con éxito")
+                                    return False
+                                elif opcion == "2":
+                                    print("\nOperacion cancelada")
+                                    return False
                         else:
                             print("\n* Cliente no encontrado o ya recuperado *")
                             continue
@@ -734,14 +741,13 @@ def suspender_servicio():
                             print(tabulate(campos, alias, tablefmt="fancy_grid"))
                             print("\nOpciones a realizar: ")
                             opcion = input("\n1. Suspender servicio\n2. Volver al menú principal\n3. Ingrese una opción: ")
-
                             if opcion == "1":
                                mi_cursor.execute('UPDATE Servicio SET canceladaServicio=1 WHERE claveServicio= :claveServicio', valor)
                                print("\nSe suspendió el servicio exitosamente")
                                break
                             elif opcion ==  "2":
                                  print("\nOperacion cancelada")
-                                 break
+                                 return False
                             else: 
                                 print("\nOperacion no válida, ingrese nuevamente")
                                 break
@@ -800,6 +806,7 @@ def recuperar_servicio():
                                break
                             elif opcion == "2":
                                print("\nOperación cancelada")
+                               return False
                         else:
                            print("\n * Servicio no encontrado o ya fue recuperado *")
                            continue
@@ -974,19 +981,25 @@ def servicios_mas_solicitados():
         else:
             num_servicios = int(num_servicios)
             break
-
-    fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
-    fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
-
-    try:
-        fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
-        fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
-        if fecha_final < fecha_inicial:
-            print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
-            return
-    except Exception:
-        print("\n* Fecha no ingresada o inválida, ingrese nuevamente *")
-        return
+    while True:
+        fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
+        if fecha_inicial == "":
+            print("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
+        fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
+        if fecha_final == "":
+            print("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
+        try:
+            fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+            if fecha_final < fecha_inicial:
+                print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
+                continue
+        except Exception:
+            print("\n* Fecha inválida *")
+            continue
+        break
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
@@ -1056,18 +1069,25 @@ def clientes_con_mas_notas():
             num_clientes = int(num_clientes)
             break
 
-    fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
-    fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
-
-    try:
-        fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
-        fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
-        if fecha_final < fecha_inicial:
-            print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
-            return
-    except Exception:
-        print("\n* Fecha no ingresada o inválida, ingrese nuevamente *")
-        return
+    while True:
+        fecha_inicial = input("\nIngrese la fecha inicial del período a reportar (dd/mm/yyyy): ")
+        if fecha_inicial == "":
+            print("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
+        fecha_final = input("\nIngrese la fecha final del período a reportar (dd/mm/yyyy): ")
+        if fecha_final == "":
+            print("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
+        try:
+            fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
+            fecha_final = datetime.datetime.strptime(fecha_final, "%d/%m/%Y").date()
+            if fecha_final < fecha_inicial:
+                print("\n* La fecha final no puede ser anterior a la fecha inicial, ingrese nuevamente *")
+                continue
+        except Exception:
+            print("\n* Fecha inválida *")
+            continue
+        break
     try:
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
@@ -1101,7 +1121,7 @@ def clientes_con_mas_notas():
 
                 if opcion == "1":
                     fecha_inicial_str = fecha_inicial.strftime("%d_%m_%Y")
-                    fecha_final_str = fecha_final.strftime("%y_%m_%Y")
+                    fecha_final_str = fecha_final.strftime("%d_%m_%Y")
                     archivo_csv = f"ReporteClientesConMasNotas_{fecha_inicial_str}_{fecha_final_str}.csv"
                     df.to_csv(archivo_csv, index=False)
                     print(f"\n* El reporte se ha guardado con el nombre: '{archivo_csv}' *")
@@ -1122,17 +1142,23 @@ def clientes_con_mas_notas():
 
 def promedio_montos_notas():
     while True:
-        fecha_inicial= input("define la fecha inicial de tu reporte(dd/mm/YYYY): ")
-        fecha_final= input ("define la fecha fin para tu reporte(dd/mm/YYYY): ")
-
+        fecha_inicial= input("\nDefine la fecha inicial de tu reporte(dd/mm/yyyy): ")
+        if fecha_inicial == "":
+            print ("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
+        fecha_final= input ("\nDefine la fecha fin para tu reporte(dd/mm/yyyy): ")
+        if fecha_final == "":
+            print ("\n* Ingrese una fecha, no puede quedar vacío. *")
+            continue
         try:
             fecha_inicial= datetime.datetime.strptime(fecha_inicial, "%d/%m/%Y").date()
             fecha_final = datetime.datetime.strptime (fecha_final, "%d/%m/%Y").date()
             if fecha_final<fecha_inicial:
-                print ("\n**la fecha final no puede ser inferior a la fecha inicial del reporte, intenta de nuevo**")
-                return
+                print ("\n* La fecha final no puede ser inferior a la fecha inicial del reporte, intenta de nuevo *")
+                continue
         except Exception:
-            print ("\n*la fecha no se ha ingresado o es invalida, ingresar nuevamente.* ")
+            print ("\n* La fecha invalida * ")
+            return
         try:
             with sqlite3.connect ("TallerMecanico.db") as conn:
                 mi_cursor = conn.cursor()
@@ -1150,15 +1176,15 @@ def promedio_montos_notas():
 
                 promedio = total_montos / cantidad_notas
                 print("\nReporte de Montos en el Período:")
-                print(f"Total de Notas en el periodo: {cantidad_notas}")
-                print(f"Total de Montos en el periodo: {total_montos}")
-                print(f"Promedio de los Montos: {promedio}")
+                print(f"\nTotal de Notas en el periodo: {cantidad_notas}")
+                print(f"\nTotal de Montos en el periodo: {total_montos}")
+                print(f"\nPromedio de los Montos: {promedio}")
+                break
         except Error as e:
             print (e)
         except Exception:
             print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
         
-
 
 print("** BIENVENIDO AL SERVICIO DE AUTOMOVILES **")
 while True:
@@ -1347,13 +1373,14 @@ while True:
                 if validar_continuidad("¿Estas seguro de realizar un promedio de montos de notas?"):
                     promedio_montos_notas()
                     continue
-            elif opcion == "4":
+            elif opcion_estadisticos == "4":
                 break
             else:
-                print("Opcion no valida, ingrese nuevamente.")
-                    
+                print("\nOpcion no valida, ingrese nuevamente.")
+
     elif opcion == "5":
-        print("\nGracias por usar este programa. 😁")
-        break
+        if validar_continuidad("¿Estas seguro de salir del programa?"):
+            print("\nGracias por usar este programa. 😁")
+            break
     else:
         print("\nOpcion no valida, ingrese nuevamente.")
