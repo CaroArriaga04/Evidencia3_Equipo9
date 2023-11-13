@@ -1069,9 +1069,9 @@ def clientes_con_mas_notas():
         with sqlite3.connect("TallerMecanico.db") as conn:
             mi_cursor = conn.cursor()
             mi_cursor.execute(
-                "SELECT Cliente.nombre AS NombreCliente, COUNT(Nota.folio) AS CantidadNotas "
+                "SELECT Cliente.nombreCliente AS nombreCliente, COUNT(Nota.folio) AS CantidadNotas "
                 "FROM Nota "
-                "JOIN Cliente ON Nota.claveCliente = CLiente.claveCliente "
+                "JOIN Cliente ON Nota.claveCliente = Cliente.claveCliente "
                 "WHERE Nota.fecha BETWEEN ? AND ? "
                 "GROUP BY Nota.claveCliente "
                 "ORDER BY CantidadNotas DESC "
