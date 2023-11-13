@@ -965,6 +965,9 @@ def servicios_mas_solicitados():
         if num_servicios == "":
             print("\n* Ingrese una cantidad, no puede quedar vacío. *")
             continue
+        elif num_servicios == "0":
+            print ("\nEl numero de servicios a consultar no puede ser inferior a 1 (uno).")
+            continue
         elif not bool(re.search('^[0-9]+$', num_servicios)):
             print("\n* Clave no válida, ingrese nuevamente. *")
             continue
